@@ -279,19 +279,6 @@ export default function MapPage() {
         </select>
 
         <select
-          value={filterDisease}
-          onChange={(e) => setFilterDisease(e.target.value)}
-          className="filter-select"
-        >
-          <option value="">All Diseases</option>
-          {DISEASES.map((d) => (
-            <option key={d} value={d}>
-              {d}
-            </option>
-          ))}
-        </select>
-
-        <select
           value={filterCrop}
           onChange={(e) => setFilterCrop(e.target.value)}
           className="filter-select"
@@ -302,17 +289,6 @@ export default function MapPage() {
               {c}
             </option>
           ))}
-        </select>
-
-        <select
-          value={filterRisk}
-          onChange={(e) => setFilterRisk(e.target.value)}
-          className="filter-select"
-        >
-          <option value="">All Risk Levels</option>
-          <option value="HIGH">High Risk</option>
-          <option value="MEDIUM">Medium Risk</option>
-          <option value="LOW">Low Risk</option>
         </select>
       </div>
 

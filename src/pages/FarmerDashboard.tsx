@@ -73,82 +73,54 @@ export default function FarmerDashboard() {
       {/* ============================================================
           AGRINEX AI: OVERALL MULTI-CROP HEALTH INTELLIGENCE HERO
           ============================================================ */}
-      <div className="card agrinex-crop-hero">
-        <div className="agrinex-hero-top-badge">
-          <Sparkles size={15} className="text-green" />
-          <span className="agrinex-hero-badge-title">
-            {t('brand.name', language)} • {t('brand.tagline', language)}
-          </span>
-        </div>
-
-        <h1 className="agrinex-hero-title">
-          {t('brand.name', language)}
-        </h1>
-
-        <p className="agrinex-hero-tagline">
-          {t('brand.tagline', language)}
-        </p>
-
-        <p className="agrinex-hero-desc">
-          {t('dashboard.multiCropMonitoring', language)}
-        </p>
-
-        {/* Multi-Crop Coverage Chips */}
-        <div className="agrinex-crops-pills-row">
-          <span className="crops-row-label">
-            <Sprout size={14} className="text-green" /> {t('common.crop', language)}:
-          </span>
-          <span className="crop-pill active">🍅 {t('crop.Tomato', language)}</span>
-          <span className="crop-pill active">🥔 {t('crop.Potato', language)}</span>
-          <span className="crop-pill active">🌽 {t('crop.Maize', language)}</span>
-          <span className="crop-pill active">🌿 {t('crop.Cotton', language)}</span>
-          <span className="crop-pill active">🌱 {t('crop.Soybean', language)}</span>
-        </div>
-
-        {/* Farmer at Center Badge */}
-        <div className="farmer-profile-center-badge">
-          <span className="farmer-avatar-circle">👨‍🌾</span>
-          <div className="farmer-profile-meta">
-            <span className="farmer-name">{user?.name || 'Rajesh Patil'}</span>
-            <span className="farmer-status-pill">{t('dashboard.farmerPlotOwner', language)}</span>
+      {/* ============================================================
+          AGRINEX AI: SIMPLIFIED DASHBOARD HEADER
+          ============================================================ */}
+      <div className="card agrinex-simplified-hero">
+        <div className="simplified-hero-main">
+          <div className="hero-brand-block">
+            <div className="hero-title-row">
+              <h1 className="hero-title">{t('brand.name', language)}</h1>
+              <span className="hero-badge"><Sparkles size={13} className="text-green" /> {t('brand.tagline', language)}</span>
+            </div>
+            <p className="hero-sub">{t('dashboard.multiCropMonitoring', language)}</p>
           </div>
-          <div className="farmer-loc-pill">
-            <MapPin size={14} className="text-green" />
-            <span>Nashik, Deolali • {t('dashboard.fieldOverview', language)}</span>
+
+          <div className="hero-farmer-block">
+            <span className="farmer-avatar-circle">👨‍🌾</span>
+            <div className="farmer-profile-meta">
+              <span className="farmer-name">{user?.name || 'Rajesh Patil'}</span>
+              <small className="farmer-sub-text"><MapPin size={12} className="text-green" /> Nashik, Deolali • {t('dashboard.farmerPlotOwner', language)}</small>
+            </div>
           </div>
         </div>
 
-        {/* Real-time Field Microclimate Stats */}
-        <div className="hub-microclimate-grid">
-          <div className="climate-stat-chip">
-            <Thermometer size={18} className="text-red" />
-            <div className="stat-text">
-              <strong>27°C</strong>
-              <small>{t('dashboard.airTemp', language)}</small>
-            </div>
+        <div className="simplified-hero-footer">
+          {/* Multi-Crop Coverage Chips */}
+          <div className="hero-crops-group">
+            <span className="crops-row-label">
+              <Sprout size={14} className="text-green" /> {t('common.crop', language)}:
+            </span>
+            <span className="crop-pill active">🍅 {t('crop.Tomato', language)}</span>
+            <span className="crop-pill active">🥔 {t('crop.Potato', language)}</span>
+            <span className="crop-pill active">🌽 {t('crop.Maize', language)}</span>
+            <span className="crop-pill active">🌿 {t('crop.Cotton', language)}</span>
+            <span className="crop-pill active">🌱 {t('crop.Soybean', language)}</span>
           </div>
 
-          <div className="climate-stat-chip highlight-humidity">
-            <Droplets size={18} className="text-blue" />
-            <div className="stat-text">
-              <strong>82%</strong>
-              <small>{t('dashboard.humidity', language)}</small>
+          {/* Compact Weather Stats */}
+          <div className="hero-weather-strip">
+            <div className="weather-mini-item">
+              <Thermometer size={14} className="text-red" />
+              <span><strong>27°C</strong></span>
             </div>
-          </div>
-
-          <div className="climate-stat-chip">
-            <Wind size={18} className="text-cyan" />
-            <div className="stat-text">
-              <strong>8 km/h</strong>
-              <small>{t('dashboard.windSpeed', language)}</small>
+            <div className="weather-mini-item">
+              <Droplets size={14} className="text-blue" />
+              <span><strong>82%</strong> {t('dashboard.humidity', language)}</span>
             </div>
-          </div>
-
-          <div className="climate-stat-chip">
-            <MapPin size={18} className="text-green" />
-            <div className="stat-text">
-              <strong>Deolali</strong>
-              <small>{t('dashboard.fieldLocation', language)}</small>
+            <div className="weather-mini-item">
+              <Wind size={14} className="text-cyan" />
+              <span><strong>8 km/h</strong> {t('dashboard.windSpeed', language)}</span>
             </div>
           </div>
         </div>

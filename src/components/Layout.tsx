@@ -15,10 +15,9 @@ import storageService from '../services/storageService';
 import type { Language } from '../types';
 
 export default function Layout() {
-  const { user, language, setLanguage, logout, unreadCount, resetDemo } = useApp();
+  const { user, language, setLanguage, logout, unreadCount } = useApp();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [demoPanel, setDemoPanel] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [langDropdown, setLangDropdown] = useState(false);
 
@@ -72,129 +71,6 @@ export default function Layout() {
             <FlaskConical size={22} className="brand-icon" style={{ color: '#22c55e' }} />
             <span className="brand-name" style={{ color: '#22c55e', fontWeight: 700 }}>AgriNex AI</span>
           </div>
-        </div>
-
-        <div className="topbar-center">
-          <span className="demo-badge" onClick={() => setDemoPanel(!demoPanel)}>
-            <FlaskConical size={14} />
-            {t('common.demoMode', language)}
-            <ChevronDown size={14} />
-          </span>
-
-          {demoPanel && (
-            <div className="demo-panel">
-              <div className="demo-panel-header">
-                <h4>{t('demo.controls', language)}</h4>
-                <button
-                  className="reset-btn"
-                  onClick={() => { resetDemo(); setDemoPanel(false); }}
-                >
-                  <RotateCcw size={13} /> {t('demo.resetData', language)}
-                </button>
-              </div>
-
-              <div className="demo-scenarios-grid">
-                <button
-                  className="demo-scenario-btn highlight"
-                  onClick={() => { navigate('/diagnosis?scenario=early_blight'); setDemoPanel(false); }}
-                >
-                  <span className="scen-icon">🍅</span>
-                  <div className="scen-meta">
-                    <strong>{t('demo.earlyBlight', language)}</strong>
-                    <small>Tomato • Conf 94% • High Risk</small>
-                  </div>
-                </button>
-
-                <button
-                  className="demo-scenario-btn"
-                  onClick={() => { navigate('/diagnosis?scenario=low_confidence'); setDemoPanel(false); }}
-                >
-                  <span className="scen-icon">❓</span>
-                  <div className="scen-meta">
-                    <strong>{t('demo.lowConfidence', language)}</strong>
-                    <small>Conf 62% • Triggers Officer Validation</small>
-                  </div>
-                </button>
-
-                <button
-                  className="demo-scenario-btn"
-                  onClick={() => { navigate('/map?selected=hs-001'); setDemoPanel(false); }}
-                >
-                  <span className="scen-icon">🗺️</span>
-                  <div className="scen-meta">
-                    <strong>{t('demo.hotspot', language)}</strong>
-                    <small>Nashik Region • High Risk Cluster</small>
-                  </div>
-                </button>
-
-                <button
-                  className="demo-scenario-btn"
-                  onClick={() => { navigate('/progress?farm=farm-01'); setDemoPanel(false); }}
-                >
-                  <span className="scen-icon">📈</span>
-                  <div className="scen-meta">
-                    <strong>{t('demo.progress', language)}</strong>
-                    <small>Day 1–10 Increasing Risk Curve</small>
-                  </div>
-                </button>
-
-                <button
-                  className="demo-scenario-btn"
-                  onClick={() => { navigate('/chatbot'); setDemoPanel(false); }}
-                >
-                  <span className="scen-icon">🤖</span>
-                  <div className="scen-meta">
-                    <strong>Multi-Agent LLM Chatbot</strong>
-                    <small>Trilingual Voice &amp; Farmer Advisory</small>
-                  </div>
-                </button>
-
-                <button
-                  className="demo-scenario-btn highlight"
-                  onClick={() => { navigate('/diagnosis?scenario=yellow_trap_whitefly'); setDemoPanel(false); }}
-                >
-                  <span className="scen-icon">🟡</span>
-                  <div className="scen-meta">
-                    <strong>Yellow Sticky Trap</strong>
-                    <small>Whitefly (18) + Aphids (4) • Trap Analysis</small>
-                  </div>
-                </button>
-
-                <button
-                  className="demo-scenario-btn"
-                  onClick={() => { navigate('/diagnosis?scenario=caterpillar_leaf'); setDemoPanel(false); }}
-                >
-                  <span className="scen-icon">🐛</span>
-                  <div className="scen-meta">
-                    <strong>Leaf Spot + Caterpillar</strong>
-                    <small>Coexisting Disease &amp; 2 Larvae</small>
-                  </div>
-                </button>
-
-                <button
-                  className="demo-scenario-btn"
-                  onClick={() => { navigate('/diagnosis?scenario=healthy_caterpillar'); setDemoPanel(false); }}
-                >
-                  <span className="scen-icon">🌱</span>
-                  <div className="scen-meta">
-                    <strong>Healthy Leaf + Caterpillar</strong>
-                    <small>No Disease Detected • 1 Caterpillar</small>
-                  </div>
-                </button>
-
-                <button
-                  className="demo-scenario-btn"
-                  onClick={() => { navigate('/diagnosis?scenario=leaf_damage_no_pest'); setDemoPanel(false); }}
-                >
-                  <span className="scen-icon">🍃</span>
-                  <div className="scen-meta">
-                    <strong>Leaf Damage (No Pest)</strong>
-                    <small>Disease only • Pest Dashboard hidden</small>
-                  </div>
-                </button>
-              </div>
-            </div>
-          )}
         </div>
 
         <div className="topbar-right">

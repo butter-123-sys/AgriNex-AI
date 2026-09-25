@@ -423,7 +423,13 @@ export default function DiagnosisPage() {
     <div className="page diagnosis-page">
       <div className="page-header">
         <h1>{t('diagnosis.title', language)}</h1>
-        <p>Upload a crop leaf image for instant AI-powered disease diagnosis</p>
+        <p>
+          {language === 'mr'
+            ? 'पीक, पान किंवा सापळ्याचा फोटो अपलोड करा — AI आपोआप रोग किंवा किडीची अचूक तपासणी करून योग्य डॅशबोर्ड दाखवेल'
+            : language === 'hi'
+            ? 'फसल, पत्ती या ट्रैप की तस्वीर अपलोड करें — AI स्वचालित रूप से रोग या कीट की पहचान कर उपयुक्त परिणाम देगा'
+            : 'Upload any crop leaf or trap photo — AI automatically inspects and routes to Pest or Disease Dashboard'}
+        </p>
       </div>
 
       {!result ? (
@@ -438,7 +444,13 @@ export default function DiagnosisPage() {
           {/* Image Upload */}
           <div className="form-section">
             <h3><Camera size={18} /> {t('diagnosis.uploadImage', language)}</h3>
-            <p className="form-hint">📸 Only crop/leaf photographs are accepted. Non-crop images will be rejected.</p>
+            <p className="form-hint">
+              🤖 {language === 'mr'
+                ? 'स्वयंचलित तपासणी: तुम्हाला रोग किंवा कीड निवडण्याची गरज नाही. सिस्टम स्वतः फोटो तपासून अचूक डॅशबोर्ड देईल.'
+                : language === 'hi'
+                ? 'स्वचालित पहचान: आपको रोग या कीट चुनने की आवश्यकता नहीं है। सिस्टम अपने आप फोटो जांच कर सही डैशबोर्ड देगा।'
+                : 'Automated AI: You don’t need to choose pest or disease. The system automatically inspects your image and displays the right dashboard.'}
+            </p>
 
             {!imageData ? (
               <div
@@ -449,11 +461,11 @@ export default function DiagnosisPage() {
               >
                 <Upload size={40} />
                 <p>{t('diagnosis.dragDrop', language)}</p>
-                <small>{language === 'mr' ? 'JPG, PNG, WebP — केवळ पीक/पानांचे फोटो' : language === 'hi' ? 'JPG, PNG, WebP — केवल फसल/पत्तियों के चित्र' : 'JPG, PNG, WebP — Crop/leaf images only'}</small>
+                <small>{language === 'mr' ? 'JPG, PNG, WebP — पीक, पाने किंवा सापळ्यांचे फोटो' : language === 'hi' ? 'JPG, PNG, WebP — फसल, पत्तियां या ट्रैप के फोटो' : 'JPG, PNG, WebP — Crop leaves or trap photos'}</small>
                 <div className="upload-accepted">
-                  <span>✅ {language === 'mr' ? 'टोमॅटो, बटाटा पाने' : language === 'hi' ? 'टमाटर, आलू पत्तियां' : 'Tomato, Potato leaves'}</span>
-                  <span>✅ {language === 'mr' ? 'मका, कापूस, सोयाबीन' : language === 'hi' ? 'मक्का, कपास, सोयाबीन' : 'Maize, Cotton, Soybean'}</span>
-                  <span>✅ {language === 'mr' ? 'पिकांचे रोगग्रस्त भाग' : language === 'hi' ? 'फसलों के रोगग्रस्त भाग' : 'Diseased crop leaves'}</span>
+                  <span>✅ {language === 'mr' ? 'टोमॅटो, बटाटा, मका पाने' : language === 'hi' ? 'टमाटर, आलू, मक्का पत्तियां' : 'Tomato, Potato, Maize leaves'}</span>
+                  <span>✅ {language === 'mr' ? 'कीड / सुरवंट / पाने' : language === 'hi' ? 'कीट / इल्ली / पत्तियां' : 'Pests on leaves & foliage'}</span>
+                  <span>✅ {language === 'mr' ? 'पिवळे व निळे चिकट सापळे' : language === 'hi' ? 'पीले और नीले चिपचिपे ट्रैप' : 'Yellow & Blue Sticky Traps'}</span>
                   <span>❌ {language === 'mr' ? 'सेल्फी चालणार नाही' : language === 'hi' ? 'सेल्फ़ी मान्य नहीं' : 'No selfies'}</span>
                   <span>❌ {language === 'mr' ? 'स्क्रीनशॉट चालणार नाही' : language === 'hi' ? 'स्क्रीनशॉट मान्य नहीं' : 'No screenshots'}</span>
                   <span>❌ {language === 'mr' ? 'कागदपत्रे चालणार नाही' : language === 'hi' ? 'दस्तावेज़ मान्य नहीं' : 'No documents'}</span>
@@ -619,9 +631,14 @@ export default function DiagnosisPage() {
             </div>
           </div>
 
-          {/* Conditional Pest & Trap Dashboard (ONLY DISPLAYED WHEN PEST/TRAP DETECTED) */}
-          {result.pestAnalysis?.hasPest && (
-            <div className="pest-result-section" style={{ marginBottom: '24px' }}>
+          {/* ============================================================
+              AUTOMATED ROUTING BY SYSTEM:
+              IF PEST DETECTED -> SHOW PEST & TRAP DASHBOARD ONLY
+              IF DISEASE DETECTED -> SHOW DISEASE DASHBOARD ONLY
+              ============================================================ */}
+          {result.pestAnalysis?.hasPest ? (
+            /* ====== PEST / TRAP DASHBOARD ONLY ====== */
+            <div className="pest-only-view">
               <PestDashboardCard
                 pestAnalysis={result.pestAnalysis}
                 language={language}
@@ -630,144 +647,168 @@ export default function DiagnosisPage() {
                   setResult(null);
                 }}
               />
-            </div>
-          )}
 
-          <div className="result-grid">
-            {/* Disease Card */}
-            <div className="result-card disease-result">
-              <h3><Activity size={18} /> {result.disease === 'Healthy' && result.pestAnalysis?.hasPest ? 'Crop Disease Status' : 'Disease Detected'}</h3>
-              <div className="disease-name">
-                {result.pestAnalysis?.isTrapImage
-                  ? '🪤 Trap Surveillance'
-                  : result.disease === 'Healthy' && result.pestAnalysis?.hasPest
-                  ? '🌱 No Major Disease Detected'
-                  : result.disease}
-              </div>
-              <div className="confidence-bar">
-                <div className="confidence-fill" style={{ width: `${result.confidence}%` }} />
-              </div>
-              <div className="confidence-label">{result.confidence}% Confidence</div>
-              <div className={`severity-badge severity-${result.severity.toLowerCase()}`}>{result.severity} Severity</div>
-              {result.validationStatus === 'PENDING' && (
-                <div className="validation-warning">
-                  <AlertTriangle size={16} />
-                  Expert Validation Required — Confidence below 80%
-                </div>
-              )}
-              {result.validationStatus === 'CONFIRMED' && (
-                <div className="validation-confirmed-badge">
-                  <ShieldCheck size={16} />
-                  AI Prediction Verified
-                </div>
-              )}
-            </div>
-
-            {/* Risk Card */}
-            <div className="result-card risk-result">
-              <h3><ShieldAlert size={18} /> Risk Score</h3>
-              <div className="risk-gauge">
-                <svg viewBox="0 0 120 120" className="gauge-svg">
-                  <circle cx="60" cy="60" r="50" fill="none" stroke="#1e293b" strokeWidth="10" />
-                  <circle cx="60" cy="60" r="50" fill="none"
-                    stroke={result.riskLevel === 'HIGH' ? '#ef4444' : result.riskLevel === 'MEDIUM' ? '#f97316' : '#22c55e'}
-                    strokeWidth="10"
-                    strokeDasharray={`${(result.riskScore / 100) * 314} 314`}
-                    strokeLinecap="round"
-                    transform="rotate(-90 60 60)"
-                    className="gauge-animated"
-                  />
-                  <text x="60" y="55" textAnchor="middle" className="gauge-text">{result.riskScore}</text>
-                  <text x="60" y="72" textAnchor="middle" className="gauge-sub">/100</text>
-                </svg>
-              </div>
-              <div className={`risk-badge risk-${result.riskLevel.toLowerCase()}`}>{result.riskLevel} RISK</div>
-              {/* Risk factors */}
-              <div className="risk-factors">
-                {result.recommendation.immediateActions.slice(0, 2).map((f, i) => (
-                  <small key={i} className="risk-factor">• {f}</small>
-                ))}
-              </div>
-            </div>
-
-            {/* Weather Card */}
-            <div className="result-card weather-result">
-              <h3><CloudRain size={18} /> Weather Conditions</h3>
-              <div className="weather-grid">
-                <div className="weather-item"><Thermometer size={16} /><span>{result.weather.temperature}°C</span><small>Temperature</small></div>
-                <div className="weather-item"><Droplets size={16} /><span>{result.weather.humidity}%</span><small>Humidity</small></div>
-                <div className="weather-item"><CloudRain size={16} /><span>{result.weather.rainfall} mm</span><small>Rainfall</small></div>
-                <div className="weather-item"><Wind size={16} /><span>{result.weather.windSpeed} km/h</span><small>Wind</small></div>
-              </div>
-              <div className="weather-forecast">
-                <small>☁️ {result.weather.condition} — {result.weather.forecast}</small>
-              </div>
-            </div>
-
-            {/* AI Explanation Card */}
-            <div className="result-card explain-result">
-              <h3><Eye size={18} /> AI Explanation (Explainable AI)</h3>
-              <div className="explain-visual">
-                {imageData ? (
-                  <div className="explain-image-wrapper">
-                    <img src={imageData} alt="Analyzed leaf" />
-                    <div className="heatmap-overlay" />
-                    <div className="attention-box" style={{
-                      left: '25%', top: '20%', width: '50%', height: '40%'
-                    }} />
-                    <div className="explain-label">AI Attention Region</div>
+              {/* Context Meta Grid: Weather & Location for the Field */}
+              <div className="result-grid" style={{ marginTop: '20px' }}>
+                {/* Weather Card */}
+                <div className="result-card weather-result">
+                  <h3><CloudRain size={18} /> Weather Conditions</h3>
+                  <div className="weather-grid">
+                    <div className="weather-item"><Thermometer size={16} /><span>{result.weather.temperature}°C</span><small>Temperature</small></div>
+                    <div className="weather-item"><Droplets size={16} /><span>{result.weather.humidity}%</span><small>Humidity</small></div>
+                    <div className="weather-item"><CloudRain size={16} /><span>{result.weather.rainfall} mm</span><small>Rainfall</small></div>
+                    <div className="weather-item"><Wind size={16} /><span>{result.weather.windSpeed} km/h</span><small>Wind</small></div>
                   </div>
-                ) : (
-                  <div className="explain-placeholder">
-                    <Leaf size={60} />
-                    <p>Demo mode — using scenario prediction</p>
+                  <div className="weather-forecast">
+                    <small>☁️ {result.weather.condition} — {result.weather.forecast}</small>
+                  </div>
+                </div>
+
+                {/* Location Card */}
+                <div className="result-card location-result">
+                  <h3><MapPin size={18} /> Field Location & Crop</h3>
+                  <p><strong>{result.location.district}</strong></p>
+                  <p>{result.location.village}, {result.location.taluka}</p>
+                  <small>📍 {result.location.latitude.toFixed(4)}°N, {result.location.longitude.toFixed(4)}°E</small>
+                  <div className="crop-info">
+                    <span className="crop-badge">🌾 {result.crop}</span>
+                    <span className="stage-badge">📅 {result.cropStage}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            /* ====== DISEASE DASHBOARD ONLY ====== */
+            <div className="result-grid">
+              {/* Disease Card */}
+              <div className="result-card disease-result">
+                <h3><Activity size={18} /> Disease Detected</h3>
+                <div className="disease-name">{result.disease}</div>
+                <div className="confidence-bar">
+                  <div className="confidence-fill" style={{ width: `${result.confidence}%` }} />
+                </div>
+                <div className="confidence-label">{result.confidence}% Confidence</div>
+                <div className={`severity-badge severity-${result.severity.toLowerCase()}`}>{result.severity} Severity</div>
+                {result.validationStatus === 'PENDING' && (
+                  <div className="validation-warning">
+                    <AlertTriangle size={16} />
+                    Expert Validation Required — Confidence below 80%
+                  </div>
+                )}
+                {result.validationStatus === 'CONFIRMED' && (
+                  <div className="validation-confirmed-badge">
+                    <ShieldCheck size={16} />
+                    AI Prediction Verified
                   </div>
                 )}
               </div>
-              <p className="explain-text">{result.explainability.description}</p>
-              <small className="explain-note">
-                In production, real Grad-CAM heatmaps from the CNN model are displayed. This demo uses color-based visual simulation.
-              </small>
-            </div>
 
-            {/* Recommendations Card */}
-            <div className="result-card recommend-result">
-              <h3><Lightbulb size={18} /> Recommendations</h3>
-              <div className="recommend-sections">
-                <div className="recommend-section">
-                  <h4>🔴 Immediate Actions</h4>
-                  <ul>{result.recommendation.immediateActions.map((a, i) => <li key={i}>{a}</li>)}</ul>
+              {/* Risk Card */}
+              <div className="result-card risk-result">
+                <h3><ShieldAlert size={18} /> Risk Score</h3>
+                <div className="risk-gauge">
+                  <svg viewBox="0 0 120 120" className="gauge-svg">
+                    <circle cx="60" cy="60" r="50" fill="none" stroke="#1e293b" strokeWidth="10" />
+                    <circle cx="60" cy="60" r="50" fill="none"
+                      stroke={result.riskLevel === 'HIGH' ? '#ef4444' : result.riskLevel === 'MEDIUM' ? '#f97316' : '#22c55e'}
+                      strokeWidth="10"
+                      strokeDasharray={`${(result.riskScore / 100) * 314} 314`}
+                      strokeLinecap="round"
+                      transform="rotate(-90 60 60)"
+                      className="gauge-animated"
+                    />
+                    <text x="60" y="55" textAnchor="middle" className="gauge-text">{result.riskScore}</text>
+                    <text x="60" y="72" textAnchor="middle" className="gauge-sub">/100</text>
+                  </svg>
                 </div>
-                <div className="recommend-section">
-                  <h4>🟡 Preventive Measures</h4>
-                  <ul>{result.recommendation.preventiveMeasures.map((a, i) => <li key={i}>{a}</li>)}</ul>
+                <div className={`risk-badge risk-${result.riskLevel.toLowerCase()}`}>{result.riskLevel} RISK</div>
+                {/* Risk factors */}
+                <div className="risk-factors">
+                  {result.recommendation.immediateActions.slice(0, 2).map((f, i) => (
+                    <small key={i} className="risk-factor">• {f}</small>
+                  ))}
                 </div>
-                <div className="recommend-section">
-                  <h4>🟢 Treatment Guidance</h4>
-                  <ul>{result.recommendation.treatmentGuidance.map((a, i) => <li key={i}>{a}</li>)}</ul>
+              </div>
+
+              {/* Weather Card */}
+              <div className="result-card weather-result">
+                <h3><CloudRain size={18} /> Weather Conditions</h3>
+                <div className="weather-grid">
+                  <div className="weather-item"><Thermometer size={16} /><span>{result.weather.temperature}°C</span><small>Temperature</small></div>
+                  <div className="weather-item"><Droplets size={16} /><span>{result.weather.humidity}%</span><small>Humidity</small></div>
+                  <div className="weather-item"><CloudRain size={16} /><span>{result.weather.rainfall} mm</span><small>Rainfall</small></div>
+                  <div className="weather-item"><Wind size={16} /><span>{result.weather.windSpeed} km/h</span><small>Wind</small></div>
                 </div>
-                <div className="recommend-section">
-                  <h4>📋 Monitoring</h4>
-                  <ul>{result.recommendation.monitoring.map((a, i) => <li key={i}>{a}</li>)}</ul>
+                <div className="weather-forecast">
+                  <small>☁️ {result.weather.condition} — {result.weather.forecast}</small>
                 </div>
-                <div className="recheck-box">
-                  <small>🔄 {result.recommendation.recheckSuggestion}</small>
+              </div>
+
+              {/* AI Explanation Card */}
+              <div className="result-card explain-result">
+                <h3><Eye size={18} /> AI Explanation (Explainable AI)</h3>
+                <div className="explain-visual">
+                  {imageData ? (
+                    <div className="explain-image-wrapper">
+                      <img src={imageData} alt="Analyzed leaf" />
+                      <div className="heatmap-overlay" />
+                      <div className="attention-box" style={{
+                        left: '25%', top: '20%', width: '50%', height: '40%'
+                      }} />
+                      <div className="explain-label">AI Attention Region</div>
+                    </div>
+                  ) : (
+                    <div className="explain-placeholder">
+                      <Leaf size={60} />
+                      <p>Demo mode — using scenario prediction</p>
+                    </div>
+                  )}
+                </div>
+                <p className="explain-text">{result.explainability.description}</p>
+                <small className="explain-note">
+                  In production, real Grad-CAM heatmaps from the CNN model are displayed. This demo uses color-based visual simulation.
+                </small>
+              </div>
+
+              {/* Recommendations Card */}
+              <div className="result-card recommend-result">
+                <h3><Lightbulb size={18} /> Recommendations</h3>
+                <div className="recommend-sections">
+                  <div className="recommend-section">
+                    <h4>🔴 Immediate Actions</h4>
+                    <ul>{result.recommendation.immediateActions.map((a, i) => <li key={i}>{a}</li>)}</ul>
+                  </div>
+                  <div className="recommend-section">
+                    <h4>🟡 Preventive Measures</h4>
+                    <ul>{result.recommendation.preventiveMeasures.map((a, i) => <li key={i}>{a}</li>)}</ul>
+                  </div>
+                  <div className="recommend-section">
+                    <h4>🟢 Treatment Guidance</h4>
+                    <ul>{result.recommendation.treatmentGuidance.map((a, i) => <li key={i}>{a}</li>)}</ul>
+                  </div>
+                  <div className="recommend-section">
+                    <h4>📋 Monitoring</h4>
+                    <ul>{result.recommendation.monitoring.map((a, i) => <li key={i}>{a}</li>)}</ul>
+                  </div>
+                  <div className="recheck-box">
+                    <small>🔄 {result.recommendation.recheckSuggestion}</small>
+                  </div>
+                </div>
+              </div>
+
+              {/* Location Card */}
+              <div className="result-card location-result">
+                <h3><MapPin size={18} /> Location & Crop Info</h3>
+                <p><strong>{result.location.district}</strong></p>
+                <p>{result.location.village}, {result.location.taluka}</p>
+                <small>📍 {result.location.latitude.toFixed(4)}°N, {result.location.longitude.toFixed(4)}°E</small>
+                <div className="crop-info">
+                  <span className="crop-badge">🌾 {result.crop}</span>
+                  <span className="stage-badge">📅 {result.cropStage}</span>
                 </div>
               </div>
             </div>
-
-            {/* Location Card */}
-            <div className="result-card location-result">
-              <h3><MapPin size={18} /> Location & Crop Info</h3>
-              <p><strong>{result.location.district}</strong></p>
-              <p>{result.location.village}, {result.location.taluka}</p>
-              <small>📍 {result.location.latitude.toFixed(4)}°N, {result.location.longitude.toFixed(4)}°E</small>
-              <div className="crop-info">
-                <span className="crop-badge">🌾 {result.crop}</span>
-                <span className="stage-badge">📅 {result.cropStage}</span>
-              </div>
-            </div>
-          </div>
+          )}
 
           {/* Step guidance for farmer */}
           <div className="diagnosis-next-steps-banner card">

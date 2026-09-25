@@ -16,6 +16,8 @@ import { validateCropImage, validateFileType } from '../services/imageValidator'
 import { matchImage, getTrainedCount } from '../services/trainedDataset';
 import pestTrapService from '../services/pestTrapService';
 import PestDashboardCard from '../components/PestDashboardCard';
+import classifyCropImage, { type UnifiedClassificationResult } from '../services/unifiedClassifier';
+import ConditionalDiagnosisResult from '../components/ConditionalDiagnosisResult';
 import storageService from '../services/storageService';
 import type { Crop, CropStage, Location, DemoScenario, Diagnosis, PipelineStep } from '../types';
 import {
@@ -68,6 +70,7 @@ export default function DiagnosisPage() {
 
   // Result state
   const [result, setResult] = useState<Diagnosis | null>(null);
+  const [unifiedResult, setUnifiedResult] = useState<UnifiedClassificationResult | null>(null);
   const [saved, setSaved] = useState(false);
 
   // Pre-fill scenario from URL
@@ -148,7 +151,44 @@ export default function DiagnosisPage() {
     setImageError('');
     setImageValidated(false);
     setCropImageConfidence(0);
+    setUnifiedResult(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const resetDiagnosis = () => {
+    setResult(null);
+    setUnifiedResult(null);
+    setSaved(false);
+    setImageData('');
+    setImageName('');
+    setImageError('');
+    setImageValidated(false);
+    setCropImageConfidence(0);
+    setScenario('');
+    setMatchInfo(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleExpertRequest = () => {
+    if (result) {
+      storageService.saveValidation({
+        id: `val-${Date.now()}`,
+        diagnosisId: result.id,
+        aiDisease: unifiedResult?.name || result.disease,
+        aiConfidence: Math.round((unifiedResult?.confidence || 0.5) * 100),
+        decision: 'PENDING',
+        comment: 'Farmer requested expert review due to low confidence or high severity.',
+        expertId: '',
+        timestamp: new Date().toISOString(),
+      });
+    }
+    alert(
+      language === 'mr'
+        ? 'कृषी तज्ज्ञांकडे पडताळणी विनंती पाठवली आहे. लवकरच मार्गदर्शन मिळेल.'
+        : language === 'hi'
+        ? 'कृषि विशेषज्ञ के पास सत्यापन अनुरोध भेज दिया गया है। जल्द ही मार्गदर्शन मिलेगा।'
+        : 'Request submitted to agricultural expert extension. You will receive guidance shortly.'
+    );
   };
 
   // Analysis pipeline
@@ -264,16 +304,24 @@ export default function DiagnosisPage() {
       await new Promise((r) => setTimeout(r, 400));
       updateStep(10, 'done');
 
-      // Step 11: Save Diagnosis
+      // Step 11: Save Diagnosis & Run Unified Conditional Classification
       updateStep(11, 'running');
+
+      const unified = await classifyCropImage(
+        imgForAnalysis,
+        crop,
+        cropStage,
+        imageName,
+        scenario || undefined
+      );
+      setUnifiedResult(unified);
+
       const resolvedDisease =
-        scenario === 'caterpillar_leaf' || scenario === 'leaf_damage_no_pest'
-          ? 'Leaf Spot'
-          : scenario === 'healthy_caterpillar' || scenario === 'yellow_trap_whitefly' || scenario === 'blue_trap_thrips' || pestAnalysis.isTrapImage
+        unified.classification === 'pest'
+          ? `${unified.name} Infestation`
+          : unified.classification === 'healthy'
           ? 'Healthy'
-          : pestAnalysis.hasPest
-          ? `${pestAnalysis.detections[0]?.pestType || 'Pest'} Infestation`
-          : detection.disease;
+          : unified.name || detection.disease;
 
       const diagnosis: Diagnosis = {
         id: `diag-${Date.now()}`,
@@ -281,22 +329,23 @@ export default function DiagnosisPage() {
         crop,
         cropStage,
         disease: resolvedDisease,
-        confidence: detection.confidence,
-        severity: detection.severity,
+        confidence: Math.round(unified.confidence * 100),
+        severity: unified.severity,
         riskScore: risk.score,
         riskLevel: risk.level,
         imageDataUrl: imageData ? imageData.substring(0, 200) + '...' : '', // Store truncated to save space
         location: loc,
         weather,
-        recommendation,
+        recommendation: {
+          ...recommendation,
+          immediateActions: unified.recommendations.slice(0, 4),
+        },
         explainability: {
-          description: pestAnalysis.hasPest
-            ? `AI analysis: ${pestAnalysis.summaryMessage} ${detection.affectedRegion}`
-            : `The AI model identified visual patterns associated with ${resolvedDisease}. ${detection.affectedRegion}`,
+          description: unified.explanation,
           highlightRegions: [{ x: 25, y: 20, width: 50, height: 40 }],
           gradcamAvailable: false,
         },
-        validationStatus: detection.confidence < 80 ? 'PENDING' : 'CONFIRMED',
+        validationStatus: unified.confidence < 0.8 ? 'PENDING' : 'CONFIRMED',
         createdAt: new Date().toISOString(),
         pestAnalysis,
       };
@@ -597,104 +646,26 @@ export default function DiagnosisPage() {
           </div>
 
           {/* ============================================================
-              AUTOMATED ROUTING BY SYSTEM:
-              IF PEST DETECTED -> SHOW PEST & TRAP DASHBOARD ONLY
-              IF DISEASE DETECTED -> SHOW DISEASE DASHBOARD ONLY
+              AUTOMATED CONDITIONAL DASHBOARD ROUTING:
+              EXACTLY ONE DASHBOARD RENDERS AT A TIME:
+              1. LEAF SPOT / DISEASE SYMPTOM -> Disease Dashboard Only
+              2. VISIBLE PEST                -> Pest Dashboard Only
+              3. HEALTHY / NO RELEVANT ISSUE -> Simple Monitoring Result
+              4. UNCERTAIN / LOW CONFIDENCE  -> Expert Verification Guidance
               ============================================================ */}
-          {result.pestAnalysis?.hasPest ? (
-            /* ====== PEST / TRAP DASHBOARD ONLY ====== */
-            <div className="pest-only-view">
-              <PestDashboardCard
-                pestAnalysis={result.pestAnalysis}
-                language={language}
-                onUploadClearer={() => {
-                  removeImage();
-                  setResult(null);
-                }}
-              />
+          {unifiedResult && (
+            <ConditionalDiagnosisResult
+              result={unifiedResult}
+              imageDataUrl={imageData}
+              language={language}
+              onUploadNewImage={resetDiagnosis}
+              onRequestExpertReview={handleExpertRequest}
+            />
+          )}
 
-              {/* Context Meta Grid: Weather & Location for the Field */}
-              <div className="result-grid" style={{ marginTop: '20px' }}>
-                {/* Weather Card */}
-                <div className="result-card weather-result">
-                  <h3><CloudRain size={18} /> Weather Conditions</h3>
-                  <div className="weather-grid">
-                    <div className="weather-item"><Thermometer size={16} /><span>{result.weather.temperature}°C</span><small>Temperature</small></div>
-                    <div className="weather-item"><Droplets size={16} /><span>{result.weather.humidity}%</span><small>Humidity</small></div>
-                    <div className="weather-item"><CloudRain size={16} /><span>{result.weather.rainfall} mm</span><small>Rainfall</small></div>
-                    <div className="weather-item"><Wind size={16} /><span>{result.weather.windSpeed} km/h</span><small>Wind</small></div>
-                  </div>
-                  <div className="weather-forecast">
-                    <small>☁️ {result.weather.condition} — {result.weather.forecast}</small>
-                  </div>
-                </div>
-
-                {/* Location Card */}
-                <div className="result-card location-result">
-                  <h3><MapPin size={18} /> Field Location & Crop</h3>
-                  <p><strong>{result.location.district}</strong></p>
-                  <p>{result.location.village}, {result.location.taluka}</p>
-                  <small>📍 {result.location.latitude.toFixed(4)}°N, {result.location.longitude.toFixed(4)}°E</small>
-                  <div className="crop-info">
-                    <span className="crop-badge">🌾 {result.crop}</span>
-                    <span className="stage-badge">📅 {result.cropStage}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ) : (
-            /* ====== DISEASE DASHBOARD ONLY ====== */
-            <div className="result-grid">
-              {/* Disease Card */}
-              <div className="result-card disease-result">
-                <h3><Activity size={18} /> Disease Detected</h3>
-                <div className="disease-name">{result.disease}</div>
-                <div className="confidence-bar">
-                  <div className="confidence-fill" style={{ width: `${result.confidence}%` }} />
-                </div>
-                <div className="confidence-label">{result.confidence}% Confidence</div>
-                <div className={`severity-badge severity-${result.severity.toLowerCase()}`}>{result.severity} Severity</div>
-                {result.validationStatus === 'PENDING' && (
-                  <div className="validation-warning">
-                    <AlertTriangle size={16} />
-                    Expert Validation Required — Confidence below 80%
-                  </div>
-                )}
-                {result.validationStatus === 'CONFIRMED' && (
-                  <div className="validation-confirmed-badge">
-                    <ShieldCheck size={16} />
-                    AI Prediction Verified
-                  </div>
-                )}
-              </div>
-
-              {/* Risk Card */}
-              <div className="result-card risk-result">
-                <h3><ShieldAlert size={18} /> Risk Score</h3>
-                <div className="risk-gauge">
-                  <svg viewBox="0 0 120 120" className="gauge-svg">
-                    <circle cx="60" cy="60" r="50" fill="none" stroke="#1e293b" strokeWidth="10" />
-                    <circle cx="60" cy="60" r="50" fill="none"
-                      stroke={result.riskLevel === 'HIGH' ? '#ef4444' : result.riskLevel === 'MEDIUM' ? '#f97316' : '#22c55e'}
-                      strokeWidth="10"
-                      strokeDasharray={`${(result.riskScore / 100) * 314} 314`}
-                      strokeLinecap="round"
-                      transform="rotate(-90 60 60)"
-                      className="gauge-animated"
-                    />
-                    <text x="60" y="55" textAnchor="middle" className="gauge-text">{result.riskScore}</text>
-                    <text x="60" y="72" textAnchor="middle" className="gauge-sub">/100</text>
-                  </svg>
-                </div>
-                <div className={`risk-badge risk-${result.riskLevel.toLowerCase()}`}>{result.riskLevel} RISK</div>
-                {/* Risk factors */}
-                <div className="risk-factors">
-                  {result.recommendation.immediateActions.slice(0, 2).map((f, i) => (
-                    <small key={i} className="risk-factor">• {f}</small>
-                  ))}
-                </div>
-              </div>
-
+          {/* Context Meta Grid: Weather & Location for the Field (Visible for Disease and Pest) */}
+          {(unifiedResult?.classification === 'disease' || unifiedResult?.classification === 'pest') && (
+            <div className="result-grid" style={{ marginTop: '20px' }}>
               {/* Weather Card */}
               <div className="result-card weather-result">
                 <h3><CloudRain size={18} /> Weather Conditions</h3>
@@ -709,61 +680,9 @@ export default function DiagnosisPage() {
                 </div>
               </div>
 
-              {/* AI Explanation Card */}
-              <div className="result-card explain-result">
-                <h3><Eye size={18} /> AI Explanation (Explainable AI)</h3>
-                <div className="explain-visual">
-                  {imageData ? (
-                    <div className="explain-image-wrapper">
-                      <img src={imageData} alt="Analyzed leaf" />
-                      <div className="heatmap-overlay" />
-                      <div className="attention-box" style={{
-                        left: '25%', top: '20%', width: '50%', height: '40%'
-                      }} />
-                      <div className="explain-label">AI Attention Region</div>
-                    </div>
-                  ) : (
-                    <div className="explain-placeholder">
-                      <Leaf size={60} />
-                      <p>Demo mode — using scenario prediction</p>
-                    </div>
-                  )}
-                </div>
-                <p className="explain-text">{result.explainability.description}</p>
-                <small className="explain-note">
-                  In production, real Grad-CAM heatmaps from the CNN model are displayed. This demo uses color-based visual simulation.
-                </small>
-              </div>
-
-              {/* Recommendations Card */}
-              <div className="result-card recommend-result">
-                <h3><Lightbulb size={18} /> Recommendations</h3>
-                <div className="recommend-sections">
-                  <div className="recommend-section">
-                    <h4>🔴 Immediate Actions</h4>
-                    <ul>{result.recommendation.immediateActions.map((a, i) => <li key={i}>{a}</li>)}</ul>
-                  </div>
-                  <div className="recommend-section">
-                    <h4>🟡 Preventive Measures</h4>
-                    <ul>{result.recommendation.preventiveMeasures.map((a, i) => <li key={i}>{a}</li>)}</ul>
-                  </div>
-                  <div className="recommend-section">
-                    <h4>🟢 Treatment Guidance</h4>
-                    <ul>{result.recommendation.treatmentGuidance.map((a, i) => <li key={i}>{a}</li>)}</ul>
-                  </div>
-                  <div className="recommend-section">
-                    <h4>📋 Monitoring</h4>
-                    <ul>{result.recommendation.monitoring.map((a, i) => <li key={i}>{a}</li>)}</ul>
-                  </div>
-                  <div className="recheck-box">
-                    <small>🔄 {result.recommendation.recheckSuggestion}</small>
-                  </div>
-                </div>
-              </div>
-
               {/* Location Card */}
               <div className="result-card location-result">
-                <h3><MapPin size={18} /> Location & Crop Info</h3>
+                <h3><MapPin size={18} /> Field Location & Crop</h3>
                 <p><strong>{result.location.district}</strong></p>
                 <p>{result.location.village}, {result.location.taluka}</p>
                 <small>📍 {result.location.latitude.toFixed(4)}°N, {result.location.longitude.toFixed(4)}°E</small>
@@ -775,23 +694,25 @@ export default function DiagnosisPage() {
             </div>
           )}
 
-          {/* Step guidance for farmer */}
-          <div className="diagnosis-next-steps-banner card">
-            <div className="next-banner-content">
-              <h4>🎯 {language === 'mr' ? 'पुढील पायरी: आजचे उपाय डॅशबोर्डवर तयार आहेत' : language === 'hi' ? 'अगला कदम: आज के उपाय डैशबोर्ड पर तैयार हैं' : 'Next Step: Today’s Field Actions Ready on Dashboard'}</h4>
-              <p>
-                {language === 'mr'
-                  ? 'निदान पूर्ण झाले आहे. शेतात आज काय फवारणी करायची व काय काळजी घ्यायची यासाठी कृपया डॅशबोर्डवरील कार्य सूचीचे पालन करा.'
-                  : language === 'hi'
-                  ? 'रोग की पहचान हो गई है। खेत में क्या छिड़काव करना है और क्या सावधानी रखनी है, इसके लिए कृपया डैशबोर्ड पर जाएं।'
-                  : 'Diagnosis complete. To execute the recommended spray and crop care today, follow the action checklist on your Dashboard.'}
-              </p>
+          {/* Step guidance for farmer (when action is required) */}
+          {(unifiedResult?.classification === 'disease' || unifiedResult?.classification === 'pest') && (
+            <div className="diagnosis-next-steps-banner card">
+              <div className="next-banner-content">
+                <h4>🎯 {language === 'mr' ? 'पुढील पायरी: आजचे उपाय डॅशबोर्डवर तयार आहेत' : language === 'hi' ? 'अगला कदम: आज के उपाय डैशबोर्ड पर तैयार हैं' : 'Next Step: Today’s Field Actions Ready on Dashboard'}</h4>
+                <p>
+                  {language === 'mr'
+                    ? 'निदान पूर्ण झाले आहे. शेतात आज काय फवारणी करायची व काय काळजी घ्यायची यासाठी कृपया डॅशबोर्डवरील कार्य सूचीचे पालन करा.'
+                    : language === 'hi'
+                    ? 'जांच पूरी हो गई है। खेत में क्या सावधानी रखनी है, इसके लिए कृपया डैशबोर्ड पर जाएं।'
+                    : 'Diagnosis complete. To execute the recommended precautions and crop care today, follow the action checklist on your Dashboard.'}
+                </p>
+              </div>
+              <button className="btn btn-primary btn-lg" onClick={() => navigate('/dashboard')}>
+                <span>{language === 'mr' ? 'डॅशबोर्डवर आजचे उपाय पहा' : language === 'hi' ? 'डैशबोर्ड पर आज के उपाय देखें' : 'Go to Dashboard (Today’s Actions)'}</span>
+                <ChevronRight size={18} />
+              </button>
             </div>
-            <button className="btn btn-primary btn-lg" onClick={() => navigate('/dashboard')}>
-              <span>{language === 'mr' ? 'डॅशबोर्डवर आजचे उपाय पहा' : language === 'hi' ? 'डैशबोर्ड पर आज के उपाय देखें' : 'Go to Dashboard (Today’s Actions)'}</span>
-              <ChevronRight size={18} />
-            </button>
-          </div>
+          )}
 
           {/* Action Buttons */}
           <div className="result-actions">
@@ -811,7 +732,7 @@ export default function DiagnosisPage() {
             <button className="btn btn-secondary" onClick={() => navigate('/history')}>
               <History size={18} /> View History
             </button>
-            <button className="btn btn-outline" onClick={() => { setResult(null); setSaved(false); setImageData(''); setImageName(''); setImageError(''); setImageValidated(false); setScenario(''); setMatchInfo(null); }}>
+            <button className="btn btn-outline" onClick={resetDiagnosis}>
               <PlusCircle size={18} /> New Diagnosis
             </button>
           </div>

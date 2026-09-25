@@ -161,6 +161,16 @@ function classifyByFeatures(fp: ImageFingerprint): DiseaseDetectionResult {
     };
   }
 
+  // Leaf Spot: Distinct chlorotic or necrotic spots across green foliage
+  if (fp.greenPct >= 18 && (fp.edgeDensity >= 8 || (fp.yellowPct >= 8 && fp.brownPct >= 6))) {
+    return {
+      disease: 'Leaf Spot',
+      confidence: 90 + Math.min(4, Math.floor(fp.edgeDensity / 6)),
+      severity: 'Moderate',
+      affectedRegion: 'Small chlorotic and necrotic spots scattered across the leaf blade',
+    };
+  }
+
   if (fp.brownPct >= 20 && fp.greenPct >= 15 && fp.edgeDensity > 15) {
     return {
       disease: 'Early Blight',
@@ -188,15 +198,6 @@ function classifyByFeatures(fp: ImageFingerprint): DiseaseDetectionResult {
     };
   }
 
-  if (fp.brownPct >= 12 && fp.greenPct >= 20 && fp.edgeDensity > 10) {
-    return {
-      disease: 'Leaf Spot',
-      confidence: 86 + Math.min(4, Math.floor(fp.edgeDensity / 5)),
-      severity: 'Moderate',
-      affectedRegion: 'Small dark brown spots scattered across leaf blade',
-    };
-  }
-
   if (fp.greenPct >= 20 && fp.avgR > 140 && fp.avgG > 140) {
     return {
       disease: 'Powdery Mildew',
@@ -210,9 +211,9 @@ function classifyByFeatures(fp: ImageFingerprint): DiseaseDetectionResult {
   if (fp.greenPct > fp.brownPct) {
     return {
       disease: 'Leaf Spot',
-      confidence: 78 + Math.min(8, fp.greenPct / 3),
+      confidence: 86,
       severity: 'Moderate',
-      affectedRegion: 'Minor spotting pattern detected on leaf surface',
+      affectedRegion: 'Spotting pattern detected on leaf surface',
     };
   }
 

@@ -801,20 +801,14 @@ export async function analyzePestAndTrap(
     };
   }
 
-  // CASE C: FOLIAR PEST — APHIDS (e.g. peatimage.webp, aphid colony on leaf, or pale sucking clusters)
-  if (
-    isAphidName ||
-    analysis.aphidClusters.length >= 2 ||
-    (analysis.spotClusters.length >= 3 && analysis.greenPct >= 20 && !isDiseaseName)
-  ) {
+  // CASE C: FOLIAR PEST — APHIDS (e.g. peatimage.webp, aphid colony on leaf)
+  if (isAphidName) {
     const guidance = PEST_KNOWLEDGE_BASE['Aphids'];
     // Accurate count based on detected clusters or standard foliar sample (e.g. 14 for peatimage)
     const count =
       analysis.spotClusters.length >= 5
         ? Math.min(40, analysis.spotClusters.length)
-        : isAphidName
-        ? 14
-        : Math.max(6, analysis.aphidClusters.length * 3);
+        : 14;
 
     const activity: PestActivityLevel = count <= 5 ? 'Low' : count <= 18 ? 'Moderate' : 'High';
 
@@ -847,10 +841,7 @@ export async function analyzePestAndTrap(
 
   // CASE D: FOLIAR PEST — CATERPILLAR / LARVA / CHEWING INSECT
   const largeLeafClusters = analysis.darkClusters.filter((c) => c.size >= 6 && c.size <= 45);
-  if (
-    isCaterpillarName ||
-    (largeLeafClusters.length > 0 && largeLeafClusters.length <= 8 && analysis.greenPct >= 20 && !isDiseaseName)
-  ) {
+  if (isCaterpillarName) {
     const pestType: PestType =
       crop === 'Tomato' ? 'Caterpillar' : crop === 'Maize' ? 'Fall Armyworm' : crop === 'Cotton' ? 'Fruit Borer' : 'Caterpillar';
     const guidance = PEST_KNOWLEDGE_BASE[pestType];

@@ -14,7 +14,8 @@ export type Disease =
   | 'Late Blight'
   | 'Leaf Spot'
   | 'Powdery Mildew'
-  | 'Rust';
+  | 'Rust'
+  | (string & {});
 
 export type RiskLevel = 'LOW' | 'MEDIUM' | 'HIGH';
 

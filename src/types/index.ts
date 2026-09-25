@@ -114,6 +114,74 @@ export interface Diagnosis {
   explainability: ExplainabilityResult;
   validationStatus: ValidationStatus;
   createdAt: string; // ISO string
+  pestAnalysis?: PestAnalysisResult;
+}
+
+// ---------- Pest & Trap Intelligence ----------
+
+export type TrapType =
+  | 'Yellow Sticky Trap'
+  | 'Blue Sticky Trap'
+  | 'Pheromone Trap'
+  | 'Light Trap'
+  | 'Pitfall Trap'
+  | 'Other / Unknown';
+
+export type PestType =
+  | 'Caterpillar'
+  | 'Whitefly'
+  | 'Aphids'
+  | 'Thrips'
+  | 'Stem Borer'
+  | 'Fall Armyworm'
+  | 'Leafminer'
+  | 'Fruit Borer'
+  | 'Unknown Pest';
+
+export type PestActivityLevel = 'Low' | 'Moderate' | 'High' | 'Unspecified';
+
+export interface PestItemDetection {
+  pestType: PestType;
+  category: 'Chewing insect' | 'Sucking insect' | 'Borer insect' | 'Tunneling insect' | 'Unknown';
+  count: number;
+  confidence?: number;
+}
+
+export interface PestGuidance {
+  pestType: PestType;
+  category: string;
+  symptoms: string;
+  whatToCheck: string[];
+  immediatePrecautions: string[];
+  managementApproach: string[];
+  monitoring: string[];
+  expertReferral: string;
+}
+
+export interface TrapInfo {
+  type: TrapType;
+  isTrapImage: boolean;
+  confidence?: number;
+  purpose: string;
+  monitoredPests: string[];
+  monitoringStatus: string;
+  recommendation: string;
+  uncertain?: boolean;
+}
+
+export interface PestAnalysisResult {
+  hasPest: boolean;
+  isTrapImage: boolean;
+  trapInfo?: TrapInfo;
+  detections: PestItemDetection[];
+  totalPestCount: number;
+  activityLevel: PestActivityLevel;
+  countingReliable: boolean;
+  lowConfidence: boolean;
+  pestGuidanceList: PestGuidance[];
+  summaryMessage: string;
+  actionPoints: string[];
+  isDemoMode?: boolean;
 }
 
 // ---------- Validation ----------
@@ -222,7 +290,12 @@ export type DemoScenario =
   | 'healthy'
   | 'low_confidence'
   | 'hotspot'
-  | 'progress';
+  | 'progress'
+  | 'yellow_trap_whitefly'
+  | 'caterpillar_leaf'
+  | 'healthy_caterpillar'
+  | 'leaf_damage_no_pest'
+  | 'blue_trap_thrips';
 
 // ---------- Federated Learning ----------
 

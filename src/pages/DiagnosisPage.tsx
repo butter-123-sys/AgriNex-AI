@@ -14,6 +14,8 @@ import { generateRecommendation } from '../services/mock/mockRecommendationServi
 import { checkNearby } from '../services/mock/mockHotspotService';
 import { validateCropImage, validateFileType } from '../services/imageValidator';
 import { matchImage, getTrainedCount } from '../services/trainedDataset';
+import pestTrapService from '../services/pestTrapService';
+import PestDashboardCard from '../components/PestDashboardCard';
 import storageService from '../services/storageService';
 import type { Crop, CropStage, Location, DemoScenario, Diagnosis, PipelineStep } from '../types';
 import {
@@ -21,18 +23,19 @@ import {
   CheckCircle2, Loader2, AlertTriangle, Thermometer,
   Droplets, Wind, CloudRain, ShieldAlert, Lightbulb,
   Eye, Save, PlusCircle, Map, History, ShieldCheck,
-  ImageOff, ScanEye, Database
+  ImageOff, ScanEye, Database, Activity, Bug
 } from 'lucide-react';
 
 const PIPELINE_STEPS: string[] = [
   'Uploading image',
-  'Validating crop image',
-  'Image quality check',
+  'Validating crop or trap image',
+  'Image quality & color check',
   'Matching against trained dataset',
   'Running disease detection AI',
+  'Scanning for pests & agricultural trap patterns',
   'Generating explainability map',
   'Fetching weather intelligence',
-  'Calculating disease risk',
+  'Calculating disease & pest risk',
   'Generating recommendations',
   'Checking nearby disease cases',
   'Saving diagnosis',
@@ -76,6 +79,11 @@ export default function DiagnosisPage() {
       else if (s === 'late_blight') { setCrop('Potato'); setCropStage('Vegetative'); setLocationIdx(1); }
       else if (s === 'healthy') { setCrop('Maize'); setCropStage('Maturity'); setLocationIdx(2); }
       else if (s === 'low_confidence') { setCrop('Potato'); setCropStage('Flowering'); setLocationIdx(3); }
+      else if (s === 'yellow_trap_whitefly') { setCrop('Tomato'); setCropStage('Flowering'); setLocationIdx(0); }
+      else if (s === 'blue_trap_thrips') { setCrop('Cotton'); setCropStage('Vegetative'); setLocationIdx(1); }
+      else if (s === 'caterpillar_leaf') { setCrop('Tomato'); setCropStage('Vegetative'); setLocationIdx(0); }
+      else if (s === 'healthy_caterpillar') { setCrop('Tomato'); setCropStage('Vegetative'); setLocationIdx(0); }
+      else if (s === 'leaf_damage_no_pest') { setCrop('Tomato'); setCropStage('Flowering'); setLocationIdx(0); }
     }
   }, [searchParams]);
 
@@ -203,49 +211,73 @@ export default function DiagnosisPage() {
 
       // Step 4: Disease detection
       updateStep(4, 'running');
-      await new Promise((r) => setTimeout(r, 700));
+      await new Promise((r) => setTimeout(r, 600));
       updateStep(4, 'done');
 
-      // Step 5: Explainability
+      // Step 5: Pest & Trap Intelligence Analysis
       updateStep(5, 'running');
+      const pestAnalysis = await pestTrapService.analyzePestAndTrap(
+        imgForAnalysis,
+        crop,
+        cropStage,
+        scenario || undefined
+      );
       await new Promise((r) => setTimeout(r, 500));
       updateStep(5, 'done');
 
-      // Step 6: Weather
+      // Step 6: Explainability
       updateStep(6, 'running');
-      const weather = await getWeather(loc);
       await new Promise((r) => setTimeout(r, 400));
       updateStep(6, 'done');
 
-      // Step 7: Risk
+      // Step 7: Weather
       updateStep(7, 'running');
-      const risk = calculateRisk(detection, weather, crop, cropStage);
-      await new Promise((r) => setTimeout(r, 500));
+      const weather = await getWeather(loc);
+      await new Promise((r) => setTimeout(r, 400));
       updateStep(7, 'done');
 
-      // Step 8: Recommendations
+      // Step 8: Risk
       updateStep(8, 'running');
-      const recommendation = generateRecommendation(detection.disease, risk, crop, cropStage, weather);
+      const risk = calculateRisk(detection, weather, crop, cropStage);
+      if (pestAnalysis.hasPest && pestAnalysis.activityLevel === 'High') {
+        risk.factors.push(`🐛 Elevated pest population: ${pestAnalysis.totalPestCount} insects detected`);
+      }
       await new Promise((r) => setTimeout(r, 400));
       updateStep(8, 'done');
 
-      // Step 9: Nearby check
+      // Step 9: Recommendations
       updateStep(9, 'running');
+      const recommendation = generateRecommendation(detection.disease, risk, crop, cropStage, weather);
+      if (pestAnalysis.hasPest && pestAnalysis.actionPoints.length > 0) {
+        recommendation.immediateActions.unshift(`🐛 Pest Alert: ${pestAnalysis.actionPoints[0]}`);
+      }
+      await new Promise((r) => setTimeout(r, 400));
+      updateStep(9, 'done');
+
+      // Step 10: Nearby check
+      updateStep(10, 'running');
       const nearbyHotspot = checkNearby(loc.latitude, loc.longitude, detection.disease);
       if (nearbyHotspot) {
         risk.factors.push(`⚠️ Nearby hotspot: ${nearbyHotspot.cases} cases of ${nearbyHotspot.disease} in ${nearbyHotspot.district}`);
       }
       await new Promise((r) => setTimeout(r, 400));
-      updateStep(9, 'done');
+      updateStep(10, 'done');
 
-      // Step 10: Save
-      updateStep(10, 'running');
+      // Step 11: Save Diagnosis
+      updateStep(11, 'running');
+      const resolvedDisease =
+        scenario === 'caterpillar_leaf' || scenario === 'leaf_damage_no_pest'
+          ? 'Leaf Spot'
+          : scenario === 'healthy_caterpillar' || scenario === 'yellow_trap_whitefly' || scenario === 'blue_trap_thrips' || pestAnalysis.isTrapImage
+          ? 'Healthy'
+          : detection.disease;
+
       const diagnosis: Diagnosis = {
         id: `diag-${Date.now()}`,
         farmerId: user?.id || 'farmer-001',
         crop,
         cropStage,
-        disease: detection.disease,
+        disease: resolvedDisease,
         confidence: detection.confidence,
         severity: detection.severity,
         riskScore: risk.score,
@@ -255,16 +287,19 @@ export default function DiagnosisPage() {
         weather,
         recommendation,
         explainability: {
-          description: `The AI model identified visual patterns associated with ${detection.disease}. ${detection.affectedRegion}`,
+          description: pestAnalysis.hasPest
+            ? `AI analysis: ${pestAnalysis.summaryMessage} ${detection.affectedRegion}`
+            : `The AI model identified visual patterns associated with ${resolvedDisease}. ${detection.affectedRegion}`,
           highlightRegions: [{ x: 25, y: 20, width: 50, height: 40 }],
           gradcamAvailable: false,
         },
         validationStatus: detection.confidence < 80 ? 'PENDING' : 'CONFIRMED',
         createdAt: new Date().toISOString(),
+        pestAnalysis,
       };
 
       await new Promise((r) => setTimeout(r, 300));
-      updateStep(10, 'done');
+      updateStep(11, 'done');
 
       setResult(diagnosis);
     } catch (err) {
@@ -484,14 +519,24 @@ export default function DiagnosisPage() {
               else if (s === 'late_blight') { setCrop('Potato'); setCropStage('Vegetative'); setLocationIdx(1); }
               else if (s === 'healthy') { setCrop('Maize'); setCropStage('Maturity'); setLocationIdx(2); }
               else if (s === 'low_confidence') { setCrop('Potato'); setCropStage('Flowering'); setLocationIdx(3); }
+              else if (s === 'yellow_trap_whitefly') { setCrop('Tomato'); setCropStage('Flowering'); setLocationIdx(0); }
+              else if (s === 'blue_trap_thrips') { setCrop('Cotton'); setCropStage('Vegetative'); setLocationIdx(1); }
+              else if (s === 'caterpillar_leaf') { setCrop('Tomato'); setCropStage('Vegetative'); setLocationIdx(0); }
+              else if (s === 'healthy_caterpillar') { setCrop('Tomato'); setCropStage('Vegetative'); setLocationIdx(0); }
+              else if (s === 'leaf_damage_no_pest') { setCrop('Tomato'); setCropStage('Flowering'); setLocationIdx(0); }
             }} className="select-input">
               <option value="">
                 {language === 'mr' ? 'अपलोड केलेला फोटो वापरा (AI वर्गीकरण)' : language === 'hi' ? 'अपलोड की गई छवि का उपयोग करें (AI वर्गीकरण)' : 'Use uploaded image (AI classification)'}
               </option>
-              <option value="early_blight">🍅 {language === 'mr' ? 'परिस्थिती A: टोमॅटो लवकर करपा — ९४%, उच्च जोखीम' : language === 'hi' ? 'परिदृश्य A: टमाटर अगेती झुलसा — 94%, उच्च जोखिम' : 'Scenario A: Early Blight — 94%, HIGH RISK'}</option>
-              <option value="late_blight">🥔 {language === 'mr' ? 'परिस्थिती B: बटाटा उशिरा करपा — ९१%, उच्च जोखीम' : language === 'hi' ? 'परिदृश्य B: आलू पछेती झुलसा — 91%, उच्च जोखिम' : 'Scenario B: Late Blight — 91%, HIGH RISK'}</option>
-              <option value="healthy">✅ {language === 'mr' ? 'परिस्थिती C: मका निरोगी — ९७%, कमी जोखीम' : language === 'hi' ? 'परिदृश्य C: मक्का स्वस्थ — 97%, कम जोखिम' : 'Scenario C: Healthy — 97%, LOW RISK'}</option>
-              <option value="low_confidence">❓ {language === 'mr' ? 'परिस्थिती D: कमी आत्मविश्वास — ६२%, तज्ञ पडताळणी' : language === 'hi' ? 'परिदृश्य D: कम विश्वास — 62%, विशेषज्ञ समीक्षा' : 'Scenario D: Low Confidence — 62%, EXPERT REVIEW'}</option>
+              <option value="early_blight">🍅 {language === 'mr' ? 'परिस्थिती A: टोमॅटो लवकर करपा — ९४%, कीड नाही' : language === 'hi' ? 'परिदृश्य A: टमाटर अगेती झुलसा — 94%, कोई कीट नहीं' : 'Scenario A: Early Blight (Disease only, No Pest)'}</option>
+              <option value="late_blight">🥔 {language === 'mr' ? 'परिस्थिती B: बटाटा उशिरा करपा — ९१%, कीड नाही' : language === 'hi' ? 'परिदृश्य B: आलू पछेती झुलसा — 91%, कोई कीट नहीं' : 'Scenario B: Late Blight (Disease only, No Pest)'}</option>
+              <option value="healthy">✅ {language === 'mr' ? 'परिस्थिती C: मका निरोगी — ९७%, कीड नाही' : language === 'hi' ? 'परिदृश्य C: मक्का स्वस्थ — 97%, कोई कीट नहीं' : 'Scenario C: Healthy Crop (No Disease, No Pest)'}</option>
+              <option value="low_confidence">❓ {language === 'mr' ? 'परिस्थिती D: कमी आत्मविश्वास — ६२%, तज्ञ पडताळणी' : language === 'hi' ? 'परिदृश्य D: कम विश्वास — 62%, विशेषज्ञ समीक्षा' : 'Scenario D: Low Confidence Disease (62%)'}</option>
+              <option value="yellow_trap_whitefly">🟡 {language === 'mr' ? 'सापळा १: पिवळा चिकट सापळा — पांढरी माशी (१८), मावा (४)' : language === 'hi' ? 'ट्रैप 1: पीला चिपचिपा ट्रैप — सफेद मक्खी (18), माहू (4)' : 'Trap 1: Yellow Sticky Trap — Whitefly (18), Aphids (4)'}</option>
+              <option value="blue_trap_thrips">🔵 {language === 'mr' ? 'सापळा २: निळा चिकट सापळा — थ्रिप्स (१४)' : language === 'hi' ? 'ट्रैप 2: नीला चिपचिपा ट्रैप — थ्रिप्स (14)' : 'Trap 2: Blue Sticky Trap — Thrips (14)'}</option>
+              <option value="caterpillar_leaf">🐛 {language === 'mr' ? 'रोग + कीड: पानावरील ठिपके + सुरवंट (२ अळ्या)' : language === 'hi' ? 'रोग + कीट: पत्ती धब्बा + इल्ली (2 लार्वा)' : 'Disease + Pest: Leaf Spot + Caterpillar (2 visible)'}</option>
+              <option value="healthy_caterpillar">🌱🐛 {language === 'mr' ? 'फक्त कीड: निरोगी पान + सुरवंट (१ अळी)' : language === 'hi' ? 'केवल कीट: स्वस्थ पत्ती + इल्ली (1 लार्वा)' : 'Pest Only: Healthy Leaf + Caterpillar (1 visible)'}</option>
+              <option value="leaf_damage_no_pest">🍃 {language === 'mr' ? 'पानांचे नुकसान: दृश्य कीड आढळली नाही' : language === 'hi' ? 'पत्ती क्षति: कोई दृश्य कीट नहीं दिखा' : 'Leaf Damage Only: No Visible Pest Detected'}</option>
             </select>
           </div>
 
@@ -574,11 +619,31 @@ export default function DiagnosisPage() {
             </div>
           </div>
 
+          {/* Conditional Pest & Trap Dashboard (ONLY DISPLAYED WHEN PEST/TRAP DETECTED) */}
+          {result.pestAnalysis?.hasPest && (
+            <div className="pest-result-section" style={{ marginBottom: '24px' }}>
+              <PestDashboardCard
+                pestAnalysis={result.pestAnalysis}
+                language={language}
+                onUploadClearer={() => {
+                  removeImage();
+                  setResult(null);
+                }}
+              />
+            </div>
+          )}
+
           <div className="result-grid">
             {/* Disease Card */}
             <div className="result-card disease-result">
-              <h3><ActivityIcon size={18} /> Disease Detected</h3>
-              <div className="disease-name">{result.disease}</div>
+              <h3><Activity size={18} /> {result.disease === 'Healthy' && result.pestAnalysis?.hasPest ? 'Crop Disease Status' : 'Disease Detected'}</h3>
+              <div className="disease-name">
+                {result.pestAnalysis?.isTrapImage
+                  ? '🪤 Trap Surveillance'
+                  : result.disease === 'Healthy' && result.pestAnalysis?.hasPest
+                  ? '🌱 No Major Disease Detected'
+                  : result.disease}
+              </div>
               <div className="confidence-bar">
                 <div className="confidence-fill" style={{ width: `${result.confidence}%` }} />
               </div>

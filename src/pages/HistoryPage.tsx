@@ -7,10 +7,11 @@ import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { t } from '../i18n/translations';
 import storageService from '../services/storageService';
+import PestDashboardCard from '../components/PestDashboardCard';
 import {
   Search, Filter, Calendar, ChevronDown, ChevronUp, MapPin,
   ArrowRight, Stethoscope, ShieldCheck, Sparkles, AlertTriangle,
-  Leaf, Thermometer, CloudRain, Droplets, Wind, Sprout
+  Leaf, Thermometer, CloudRain, Droplets, Wind, Sprout, Bug
 } from 'lucide-react';
 import { CROPS, DISEASES } from '../config/demoConfig';
 import type { Diagnosis, Crop } from '../types';
@@ -383,7 +384,12 @@ export default function HistoryPage() {
               <div className="history-main">
                 <div className="history-disease">
                   <span className="history-crop-emoji">{getCropEmoji(d.crop)}</span>
-                  <strong>{d.disease}</strong>
+                  <strong>{d.pestAnalysis?.isTrapImage ? '🪤 ' + (d.pestAnalysis.trapInfo?.type || 'Trap') : d.disease}</strong>
+                  {d.pestAnalysis?.hasPest && (
+                    <span className="pest-tag-badge">
+                      🐛 {d.pestAnalysis.isTrapImage ? `${d.pestAnalysis.totalPestCount} insects` : `${d.pestAnalysis.detections[0]?.pestType || 'Pest'} (${d.pestAnalysis.totalPestCount})`}
+                    </span>
+                  )}
                   <span className={`risk-badge risk-${d.riskLevel.toLowerCase()}`}>{d.riskLevel}</span>
                   <span className={`validation-badge val-${d.validationStatus.toLowerCase()}`}>{d.validationStatus}</span>
                 </div>
@@ -450,6 +456,13 @@ export default function HistoryPage() {
                       ))}
                     </ul>
                   </div>
+
+                  {/* Conditional Pest & Trap Intelligence Breakdown */}
+                  {d.pestAnalysis?.hasPest && (
+                    <div className="history-pest-wrapper" style={{ gridColumn: '1 / -1', marginTop: '4px', marginBottom: '8px' }}>
+                      <PestDashboardCard pestAnalysis={d.pestAnalysis} language={language} />
+                    </div>
+                  )}
 
                   {/* Anonymized Agronomist Verification Box */}
                   <div className="detail-section verified-expert-box" style={{ gridColumn: '1 / -1', background: 'rgba(34, 197, 94, 0.08)', border: '1px solid rgba(34, 197, 94, 0.3)', borderRadius: '8px', padding: '14px' }}>

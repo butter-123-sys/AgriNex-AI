@@ -5510,6 +5510,525 @@ body {
   line-height: 1.45;
 }
 
+/* ============================================================
+   AgriNex AI — Pest & Trap Image Intelligence Styles
+   ============================================================ */
+
+.pest-dashboard-card {
+  background: linear-gradient(145deg, #16202e, #131a26);
+  border: 1px solid rgba(249, 115, 22, 0.35);
+  border-radius: var(--radius);
+  padding: 22px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+  position: relative;
+  overflow: hidden;
+}
+
+.pest-dashboard-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, #f97316, #eab308, #22c55e);
+}
+
+.pest-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 18px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.pest-header-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pest-icon-wrapper {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: rgba(249, 115, 22, 0.15);
+  border: 1px solid rgba(249, 115, 22, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pest-header-title h3 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #f8fafc;
+  margin: 0 0 2px 0;
+}
+
+.pest-header-sub {
+  font-size: 0.82rem;
+  color: #94a3b8;
+}
+
+.pest-header-badges {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pest-activity-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.pest-activity-badge.activity-high {
+  background: rgba(239, 68, 68, 0.18);
+  border: 1px solid rgba(239, 68, 68, 0.5);
+  color: #f87171;
+}
+
+.pest-activity-badge.activity-moderate {
+  background: rgba(249, 115, 22, 0.18);
+  border: 1px solid rgba(249, 115, 22, 0.5);
+  color: #fb923c;
+}
+
+.pest-activity-badge.activity-low {
+  background: rgba(34, 197, 94, 0.18);
+  border: 1px solid rgba(34, 197, 94, 0.5);
+  color: #4ade80;
+}
+
+/* Trap Banner */
+.pest-trap-banner {
+  background: rgba(234, 179, 8, 0.08);
+  border: 1px solid rgba(234, 179, 8, 0.3);
+  border-radius: var(--radius-sm);
+  padding: 16px 18px;
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.trap-type-label {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #eab308;
+  letter-spacing: 0.08em;
+  margin-bottom: 4px;
+}
+
+.trap-name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.trap-name {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #fef08a;
+}
+
+.trap-confidence-pill {
+  font-size: 0.72rem;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 2px 8px;
+  border-radius: 6px;
+  color: #cbd5e1;
+}
+
+.trap-purpose-text {
+  font-size: 0.85rem;
+  color: #cbd5e1;
+  margin: 0;
+  line-height: 1.4;
+  max-width: 580px;
+}
+
+.trap-monitoring-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(234, 179, 8, 0.2);
+  border-radius: 8px;
+  padding: 10px 14px;
+  max-width: 380px;
+}
+
+.trap-monitoring-notice svg {
+  color: #eab308;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.trap-monitoring-notice strong {
+  display: block;
+  font-size: 0.82rem;
+  color: #fef08a;
+  margin-bottom: 2px;
+}
+
+.trap-monitoring-notice small {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  line-height: 1.35;
+}
+
+/* Alert Boxes */
+.pest-alert-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 8px;
+  margin-bottom: 18px;
+}
+
+.pest-alert-box.alert-warning {
+  background: rgba(249, 115, 22, 0.12);
+  border: 1px solid rgba(249, 115, 22, 0.35);
+  color: #f97316;
+}
+
+.pest-alert-box strong {
+  display: block;
+  font-size: 0.92rem;
+  margin-bottom: 4px;
+  color: #fdba74;
+}
+
+.pest-alert-box p {
+  font-size: 0.84rem;
+  color: #e2e8f0;
+  margin: 0 0 10px 0;
+}
+
+.alert-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.expert-hint {
+  font-size: 0.8rem;
+  color: #cbd5e1;
+}
+
+/* Pest Counts */
+.pest-counts-container {
+  margin-bottom: 22px;
+}
+
+.counts-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.counts-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+.total-badge {
+  font-size: 0.85rem;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 4px 12px;
+  border-radius: 8px;
+  color: #cbd5e1;
+}
+
+.total-badge strong {
+  color: #f97316;
+}
+
+.pest-type-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.pest-count-card {
+  background: rgba(30, 41, 59, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 14px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pest-count-card:hover {
+  background: rgba(249, 115, 22, 0.08);
+  border-color: rgba(249, 115, 22, 0.3);
+  transform: translateY(-2px);
+}
+
+.pest-count-card.active-pest-card {
+  background: rgba(249, 115, 22, 0.14);
+  border-color: #f97316;
+  box-shadow: 0 0 12px rgba(249, 115, 22, 0.2);
+}
+
+.pest-card-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pest-type-icon {
+  font-size: 1.5rem;
+}
+
+.pest-name {
+  display: block;
+  font-size: 0.95rem;
+  color: #f8fafc;
+}
+
+.pest-category-tag {
+  display: block;
+  font-size: 0.72rem;
+  color: #94a3b8;
+}
+
+.pest-card-count {
+  text-align: right;
+}
+
+.count-number {
+  display: block;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #f97316;
+  line-height: 1;
+}
+
+.count-unit {
+  font-size: 0.72rem;
+  color: #94a3b8;
+}
+
+.counting-unreliable-box {
+  background: rgba(234, 179, 8, 0.08);
+  border: 1px dashed rgba(234, 179, 8, 0.3);
+  border-radius: 8px;
+  padding: 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Process Guide */
+.pest-process-section {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+
+.process-header {
+  padding: 14px 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.process-title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.process-title-group h4 {
+  font-size: 0.98rem;
+  color: #f1f5f9;
+  margin: 0;
+}
+
+.highlight-pest-name {
+  color: #4ade80;
+  font-weight: 700;
+}
+
+.process-body {
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.process-step-block {
+  background: rgba(30, 41, 59, 0.4);
+  border-left: 3px solid #3b82f6;
+  border-radius: 0 8px 8px 0;
+  padding: 12px 16px;
+}
+
+.process-step-block.expert-block {
+  border-left-color: #22c55e;
+  background: rgba(34, 197, 94, 0.06);
+}
+
+.step-label-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.step-label-row strong {
+  font-size: 0.88rem;
+  color: #f8fafc;
+}
+
+.step-points {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 0.82rem;
+  color: #cbd5e1;
+  line-height: 1.5;
+}
+
+.step-points li {
+  margin-bottom: 4px;
+}
+
+.expert-text {
+  font-size: 0.83rem;
+  color: #cbd5e1;
+  margin: 0;
+  line-height: 1.45;
+}
+
+.pest-card-footer {
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  text-align: center;
+  color: #64748b;
+  font-size: 0.75rem;
+}
+
+/* Compact Card for Dashboard */
+.pest-activity-compact-card {
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.12), rgba(30, 41, 59, 0.7));
+  border: 1px solid rgba(249, 115, 22, 0.35);
+  border-radius: var(--radius);
+  padding: 16px;
+  transition: all 0.2s ease;
+}
+
+.pest-activity-compact-card:hover {
+  transform: translateY(-2px);
+  border-color: #f97316;
+  box-shadow: 0 4px 20px rgba(249, 115, 22, 0.25);
+}
+
+.pest-card-compact-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.compact-title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.compact-title-group strong {
+  font-size: 0.95rem;
+  color: #f8fafc;
+}
+
+.compact-bug-badge {
+  font-size: 1.2rem;
+}
+
+.compact-pest-counts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+  padding: 8px 10px;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 6px;
+}
+
+.compact-pest-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.84rem;
+}
+
+.det-pest-name {
+  color: #94a3b8;
+}
+
+.det-pest-count {
+  color: #f97316;
+  font-size: 0.95rem;
+}
+
+.det-trap-val {
+  color: #fef08a;
+  font-weight: 600;
+  font-size: 0.82rem;
+}
+
+.compact-pest-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.75rem;
+  color: #eab308;
+  font-weight: 600;
+}
+
+.compact-arrow {
+  color: #94a3b8;
+}
+
+/* History Badge */
+.pest-tag-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  background: rgba(249, 115, 22, 0.18);
+  border: 1px solid rgba(249, 115, 22, 0.4);
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #fdba74;
+  margin-left: 6px;
+}
+
+
 
 
 

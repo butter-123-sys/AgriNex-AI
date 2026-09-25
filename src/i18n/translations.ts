@@ -311,6 +311,20 @@ const translations: Record<string, Record<string, string>> = {
   'demo.hotspot': { en: 'Community Hotspot: 7 cases', mr: 'समुदाय हॉटस्पॉट: ७ प्रकरणे', hi: 'सामुदायिक हॉटस्पॉट: 7 मामले' },
   'demo.progress': { en: 'Disease Progress: Day 1–10', mr: 'रोग प्रगती: दिवस १–१०', hi: 'रोग प्रगति: दिन 1–10' },
   'demo.architecture': { en: 'Multi-Agent & FL Architecture', mr: 'बहु-एजंट आणि FL आर्किटेक्चर', hi: 'बहु-एजेंट और FL आर्किटेक्चर' },
+  'demo.yellowTrap': { en: '🟡 Yellow Sticky Trap: 18 Whitefly, 4 Aphids', mr: '🟡 पिवळा चिकट सापळा: १८ पांढरी माशी, ४ मावा', hi: '🟡 पीला चिपचिपा ट्रैप: 18 सफेद मक्खी, 4 माहू' },
+  'demo.caterpillarLeaf': { en: '🐛 Caterpillar on Diseased Leaf: 2 Visible', mr: '🐛 रोगट पानावर सुरवंट/अळी: २ दिसणारे', hi: '🐛 रोगग्रस्त पत्ती पर इल्ली: 2 दृश्यमान' },
+  'demo.healthyCaterpillar': { en: '🐛 Healthy Leaf with Caterpillar: 1 Visible', mr: '🐛 निरोगी पानावर सुरवंट: १ दिसणारा', hi: '🐛 स्वस्थ पत्ती पर इल्ली: 1 दृश्यमान' },
+  'demo.leafDamageNoPest': { en: '🍃 Leaf Damage: No Visible Pest', mr: '🍃 पानांचे नुकसान: कोणतीही कीड नाही', hi: '🍃 पत्ती क्षति: कोई कीट नहीं' },
+
+  // ---------- Pest & Trap Intelligence ----------
+  'pest.cardTitle': { en: 'Pest & Trap Intelligence', mr: 'कीड व सापळा बुद्धिमत्ता', hi: 'कीट एवं ट्रैप बुद्धिमत्ता' },
+  'pest.activityCardTitle': { en: 'Pest Activity', mr: 'कीड प्रादुर्भाव स्थिती', hi: 'कीट गतिविधि स्थिति' },
+  'pest.statusMonitoring': { en: 'Monitoring Required', mr: 'निरीक्षण आवश्यक', hi: 'निगरानी आवश्यक' },
+  'pest.noPestData': { en: 'No pest analysis available yet.', mr: 'अद्याप कोणतेही कीड विश्लेषण उपलब्ध नाही.', hi: 'अभी तक कोई कीट विश्लेषण उपलब्ध नहीं है।' },
+  'pest.trapType': { en: 'Trap Type', mr: 'सापळ्याचा प्रकार', hi: 'ट्रैप का प्रकार' },
+  'pest.insectsDetected': { en: 'Insects Detected', mr: 'आढळलेले कीटक', hi: 'पाए गए कीट' },
+  'pest.activityLevel': { en: 'Activity Level', mr: 'प्रादुर्भाव पातळी', hi: 'गतिविधि स्तर' },
+  'pest.viewDetails': { en: 'View Pest Details', mr: 'कीड तपशील पहा', hi: 'कीट विवरण देखें' },
 };
 
 export function t(key: string, lang: string = 'en'): string {

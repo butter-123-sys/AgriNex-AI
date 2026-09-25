@@ -148,6 +148,50 @@ export default function Layout() {
                     <small>Trilingual Voice &amp; Farmer Advisory</small>
                   </div>
                 </button>
+
+                <button
+                  className="demo-scenario-btn highlight"
+                  onClick={() => { navigate('/diagnosis?scenario=yellow_trap_whitefly'); setDemoPanel(false); }}
+                >
+                  <span className="scen-icon">🟡</span>
+                  <div className="scen-meta">
+                    <strong>Yellow Sticky Trap</strong>
+                    <small>Whitefly (18) + Aphids (4) • Trap Analysis</small>
+                  </div>
+                </button>
+
+                <button
+                  className="demo-scenario-btn"
+                  onClick={() => { navigate('/diagnosis?scenario=caterpillar_leaf'); setDemoPanel(false); }}
+                >
+                  <span className="scen-icon">🐛</span>
+                  <div className="scen-meta">
+                    <strong>Leaf Spot + Caterpillar</strong>
+                    <small>Coexisting Disease &amp; 2 Larvae</small>
+                  </div>
+                </button>
+
+                <button
+                  className="demo-scenario-btn"
+                  onClick={() => { navigate('/diagnosis?scenario=healthy_caterpillar'); setDemoPanel(false); }}
+                >
+                  <span className="scen-icon">🌱</span>
+                  <div className="scen-meta">
+                    <strong>Healthy Leaf + Caterpillar</strong>
+                    <small>No Disease Detected • 1 Caterpillar</small>
+                  </div>
+                </button>
+
+                <button
+                  className="demo-scenario-btn"
+                  onClick={() => { navigate('/diagnosis?scenario=leaf_damage_no_pest'); setDemoPanel(false); }}
+                >
+                  <span className="scen-icon">🍃</span>
+                  <div className="scen-meta">
+                    <strong>Leaf Damage (No Pest)</strong>
+                    <small>Disease only • Pest Dashboard hidden</small>
+                  </div>
+                </button>
               </div>
             </div>
           )}

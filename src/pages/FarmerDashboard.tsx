@@ -6,9 +6,10 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { t } from '../i18n/translations';
+import storageService from '../services/storageService';
 import {
   Stethoscope, TrendingUp, Map, ChevronRight, ShieldCheck,
-  Thermometer, Droplets, Wind, MapPin, CheckCircle2, Sparkles, Sprout
+  Thermometer, Droplets, Wind, MapPin, CheckCircle2, Sparkles, Sprout, Bug
 } from 'lucide-react';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -352,6 +353,55 @@ export default function FarmerDashboard() {
             </div>
             <ChevronRight size={18} className="action-nav-chevron" />
           </div>
+
+          {/* CONDITIONAL COMPACT PEST ACTIVITY CARD (ONLY WHEN PEST/TRAP DATA EXISTS) */}
+          {(() => {
+            const diagnoses = storageService.getDiagnoses();
+            const latestPestDiag = diagnoses.find((d) => d.pestAnalysis?.hasPest);
+            const pData = latestPestDiag?.pestAnalysis;
+
+            if (!pData || !pData.hasPest) return null;
+
+            return (
+              <div
+                className="card pest-activity-compact-card"
+                onClick={() => navigate('/history')}
+                role="button"
+                tabIndex={0}
+                style={{ cursor: 'pointer' }}
+              >
+                <div className="pest-card-compact-header">
+                  <div className="compact-title-group">
+                    <span className="compact-bug-badge">🐛</span>
+                    <strong>{language === 'mr' ? 'कीड प्रादुर्भाव स्थिती' : language === 'hi' ? 'कीट गतिविधि स्थिति' : 'Pest Activity'}</strong>
+                  </div>
+                  <span className={`status-pill status-${pData.activityLevel.toLowerCase()}`}>
+                    {pData.activityLevel} Activity
+                  </span>
+                </div>
+
+                <div className="compact-pest-counts-list">
+                  {pData.detections.map((det, i) => (
+                    <div key={i} className="compact-pest-row">
+                      <span className="det-pest-name">{det.pestType}:</span>
+                      <strong className="det-pest-count">{det.count}</strong>
+                    </div>
+                  ))}
+                  {pData.isTrapImage && pData.trapInfo && (
+                    <div className="compact-pest-row trap-row">
+                      <span className="det-pest-name">Trap:</span>
+                      <span className="det-trap-val">{pData.trapInfo.type}</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="compact-pest-footer">
+                  <span className="compact-monitoring-tag">⚠️ Status: Monitoring Required</span>
+                  <ChevronRight size={16} className="compact-arrow" />
+                </div>
+              </div>
+            );
+          })()}
         </div>
       </div>
 

@@ -45,6 +45,7 @@ export async function validateCropImage(imageDataUrl: string): Promise<Validatio
       let greenPixels = 0;
       let brownPixels = 0;
       let yellowPixels = 0;
+      let blueTrapPixels = 0;
       let whitePixels = 0;
       let darkPixels = 0;
 
@@ -66,15 +67,19 @@ export async function validateCropImage(imageDataUrl: string): Promise<Validatio
         else if (r > g && r > b && r > 80 && g > 50 && b < g && (r - b) > 30) {
           brownPixels++;
         }
-        // Yellow detection (wilting, rust)
+        // Yellow detection (wilting, rust, yellow sticky trap)
         else if (r > 150 && g > 130 && b < 100 && Math.abs(r - g) < 50) {
           yellowPixels++;
+        }
+        // Blue detection (blue sticky trap)
+        else if (b > 110 && b > r + 25 && b > g + 15) {
+          blueTrapPixels++;
         }
         // White/very light (powdery mildew, overexposed)
         else if (r > 200 && g > 200 && b > 200) {
           whitePixels++;
         }
-        // Very dark
+        // Very dark (insects, necrosis)
         else if (l < 30) {
           darkPixels++;
         }
@@ -83,6 +88,7 @@ export async function validateCropImage(imageDataUrl: string): Promise<Validatio
       const greenPct = (greenPixels / totalPixels) * 100;
       const brownPct = (brownPixels / totalPixels) * 100;
       const yellowPct = (yellowPixels / totalPixels) * 100;
+      const blueTrapPct = (blueTrapPixels / totalPixels) * 100;
       const plantRelated = greenPct + brownPct + yellowPct;
       const whitePct = (whitePixels / totalPixels) * 100;
       const darkPct = (darkPixels / totalPixels) * 100;
@@ -92,7 +98,17 @@ export async function validateCropImage(imageDataUrl: string): Promise<Validatio
       let confidence = 0;
       let reason = '';
 
-      if (plantRelated >= 25) {
+      if (yellowPct >= 28 && darkPct >= 1) {
+        // Agricultural Yellow Sticky Trap with insect spots
+        isCropImage = true;
+        confidence = 94;
+        reason = 'Agricultural Yellow Sticky Trap image detected';
+      } else if (blueTrapPct >= 20) {
+        // Agricultural Blue Sticky Trap
+        isCropImage = true;
+        confidence = 92;
+        reason = 'Agricultural Blue Sticky Trap image detected';
+      } else if (plantRelated >= 25) {
         // Strong plant-related colors
         isCropImage = true;
         confidence = Math.min(95, 50 + plantRelated * 0.8);
@@ -110,15 +126,15 @@ export async function validateCropImage(imageDataUrl: string): Promise<Validatio
       } else if (whitePct > 60) {
         isCropImage = false;
         confidence = 85;
-        reason = 'Image appears to be a document or screenshot. Please upload a crop/leaf image.';
+        reason = 'Image appears to be a document or screenshot. Please upload a crop or trap photo.';
       } else if (darkPct > 60) {
         isCropImage = false;
         confidence = 70;
-        reason = 'Image is too dark. Please upload a clear, well-lit crop/leaf image.';
+        reason = 'Image is too dark. Please upload a clear, well-lit crop or trap image.';
       } else {
         isCropImage = false;
         confidence = 60;
-        reason = 'This does not appear to be a crop or leaf image. Please upload a photo of a crop leaf.';
+        reason = 'This does not appear to be a crop leaf or trap image. Please upload a crop photograph.';
       }
 
       resolve({

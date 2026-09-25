@@ -220,7 +220,8 @@ export default function DiagnosisPage() {
         imgForAnalysis,
         crop,
         cropStage,
-        scenario || undefined
+        scenario || undefined,
+        imageName
       );
       await new Promise((r) => setTimeout(r, 500));
       updateStep(5, 'done');
@@ -270,6 +271,8 @@ export default function DiagnosisPage() {
           ? 'Leaf Spot'
           : scenario === 'healthy_caterpillar' || scenario === 'yellow_trap_whitefly' || scenario === 'blue_trap_thrips' || pestAnalysis.isTrapImage
           ? 'Healthy'
+          : pestAnalysis.hasPest
+          ? `${pestAnalysis.detections[0]?.pestType || 'Pest'} Infestation`
           : detection.disease;
 
       const diagnosis: Diagnosis = {
@@ -512,44 +515,6 @@ export default function DiagnosisPage() {
                 <AlertTriangle size={16} /> {imageError}
               </div>
             )}
-          </div>
-
-          {/* Demo Scenario Selector */}
-          <div className="form-section">
-            <h3><ScanEye size={18} /> {t('diagnosis.demoScenario', language)}</h3>
-            <p className="form-hint">
-              {language === 'mr'
-                ? 'डेमोसाठी पूर्व-निर्मित परिस्थिती निवडा किंवा वर प्रत्यक्ष पिकाचा फोटो अपलोड करा.'
-                : language === 'hi'
-                ? 'डेमो के लिए पूर्व-निर्धारित परिदृश्य चुनें या ऊपर वास्तविक फसल की तस्वीर अपलोड करें।'
-                : 'Select a preset scenario for demo, or upload a real crop image above.'}
-            </p>
-            <select value={scenario} onChange={(e) => {
-              const s = e.target.value as DemoScenario;
-              setScenario(s);
-              if (s === 'early_blight') { setCrop('Tomato'); setCropStage('Flowering'); setLocationIdx(0); }
-              else if (s === 'late_blight') { setCrop('Potato'); setCropStage('Vegetative'); setLocationIdx(1); }
-              else if (s === 'healthy') { setCrop('Maize'); setCropStage('Maturity'); setLocationIdx(2); }
-              else if (s === 'low_confidence') { setCrop('Potato'); setCropStage('Flowering'); setLocationIdx(3); }
-              else if (s === 'yellow_trap_whitefly') { setCrop('Tomato'); setCropStage('Flowering'); setLocationIdx(0); }
-              else if (s === 'blue_trap_thrips') { setCrop('Cotton'); setCropStage('Vegetative'); setLocationIdx(1); }
-              else if (s === 'caterpillar_leaf') { setCrop('Tomato'); setCropStage('Vegetative'); setLocationIdx(0); }
-              else if (s === 'healthy_caterpillar') { setCrop('Tomato'); setCropStage('Vegetative'); setLocationIdx(0); }
-              else if (s === 'leaf_damage_no_pest') { setCrop('Tomato'); setCropStage('Flowering'); setLocationIdx(0); }
-            }} className="select-input">
-              <option value="">
-                {language === 'mr' ? 'अपलोड केलेला फोटो वापरा (AI वर्गीकरण)' : language === 'hi' ? 'अपलोड की गई छवि का उपयोग करें (AI वर्गीकरण)' : 'Use uploaded image (AI classification)'}
-              </option>
-              <option value="early_blight">🍅 {language === 'mr' ? 'परिस्थिती A: टोमॅटो लवकर करपा — ९४%, कीड नाही' : language === 'hi' ? 'परिदृश्य A: टमाटर अगेती झुलसा — 94%, कोई कीट नहीं' : 'Scenario A: Early Blight (Disease only, No Pest)'}</option>
-              <option value="late_blight">🥔 {language === 'mr' ? 'परिस्थिती B: बटाटा उशिरा करपा — ९१%, कीड नाही' : language === 'hi' ? 'परिदृश्य B: आलू पछेती झुलसा — 91%, कोई कीट नहीं' : 'Scenario B: Late Blight (Disease only, No Pest)'}</option>
-              <option value="healthy">✅ {language === 'mr' ? 'परिस्थिती C: मका निरोगी — ९७%, कीड नाही' : language === 'hi' ? 'परिदृश्य C: मक्का स्वस्थ — 97%, कोई कीट नहीं' : 'Scenario C: Healthy Crop (No Disease, No Pest)'}</option>
-              <option value="low_confidence">❓ {language === 'mr' ? 'परिस्थिती D: कमी आत्मविश्वास — ६२%, तज्ञ पडताळणी' : language === 'hi' ? 'परिदृश्य D: कम विश्वास — 62%, विशेषज्ञ समीक्षा' : 'Scenario D: Low Confidence Disease (62%)'}</option>
-              <option value="yellow_trap_whitefly">🟡 {language === 'mr' ? 'सापळा १: पिवळा चिकट सापळा — पांढरी माशी (१८), मावा (४)' : language === 'hi' ? 'ट्रैप 1: पीला चिपचिपा ट्रैप — सफेद मक्खी (18), माहू (4)' : 'Trap 1: Yellow Sticky Trap — Whitefly (18), Aphids (4)'}</option>
-              <option value="blue_trap_thrips">🔵 {language === 'mr' ? 'सापळा २: निळा चिकट सापळा — थ्रिप्स (१४)' : language === 'hi' ? 'ट्रैप 2: नीला चिपचिपा ट्रैप — थ्रिप्स (14)' : 'Trap 2: Blue Sticky Trap — Thrips (14)'}</option>
-              <option value="caterpillar_leaf">🐛 {language === 'mr' ? 'रोग + कीड: पानावरील ठिपके + सुरवंट (२ अळ्या)' : language === 'hi' ? 'रोग + कीट: पत्ती धब्बा + इल्ली (2 लार्वा)' : 'Disease + Pest: Leaf Spot + Caterpillar (2 visible)'}</option>
-              <option value="healthy_caterpillar">🌱🐛 {language === 'mr' ? 'फक्त कीड: निरोगी पान + सुरवंट (१ अळी)' : language === 'hi' ? 'केवल कीट: स्वस्थ पत्ती + इल्ली (1 लार्वा)' : 'Pest Only: Healthy Leaf + Caterpillar (1 visible)'}</option>
-              <option value="leaf_damage_no_pest">🍃 {language === 'mr' ? 'पानांचे नुकसान: दृश्य कीड आढळली नाही' : language === 'hi' ? 'पत्ती क्षति: कोई दृश्य कीट नहीं दिखा' : 'Leaf Damage Only: No Visible Pest Detected'}</option>
-            </select>
           </div>
 
           {/* Crop & Stage */}

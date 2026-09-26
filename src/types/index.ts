@@ -98,6 +98,82 @@ export interface ExplainabilityResult {
 
 // ---------- Diagnosis ----------
 
+export type ImageClassificationResult =
+  | {
+      classification: 'disease';
+      name: string;
+      confidence: number;
+      severity: 'Low' | 'Moderate' | 'High';
+      image_type: 'crop_image';
+      affected_area?: string;
+      explanation?: string;
+      recommendations: string[];
+      expert_verification: boolean;
+      monitor_days: number;
+      crop: Crop;
+      highlight_box?: { x: number; y: number; width: number; height: number };
+    }
+  | {
+      classification: 'pest';
+      name: string;
+      confidence: number;
+      visible_count: number;
+      severity: 'Low' | 'Moderate' | 'High';
+      image_type: 'crop_image';
+      pestCategory?: string;
+      explanation?: string;
+      recommendations: string[];
+      expert_verification: boolean;
+      monitor_days: number;
+      crop: Crop;
+      highlight_box?: { x: number; y: number; width: number; height: number };
+    }
+  | {
+      classification: 'trap';
+      trap_type: string;
+      pest_type: string;
+      visible_count: number;
+      confidence: number;
+      severity?: 'Low' | 'Moderate' | 'High';
+      status?: string;
+      recommendations: string[];
+      explanation?: string;
+      expert_verification?: boolean;
+      monitor_days: number;
+      crop: Crop;
+      highlight_box?: { x: number; y: number; width: number; height: number };
+    }
+  | {
+      classification: 'healthy';
+      name: string;
+      confidence: number;
+      severity?: 'Low';
+      image_type?: 'crop_image';
+      recommendations: string[];
+      expert_verification: boolean;
+      crop: Crop;
+      explanation?: string;
+    }
+  | {
+      classification: 'uncertain';
+      confidence: number;
+      recommendations: string[];
+      expert_verification: true;
+      crop: Crop;
+      explanation?: string;
+    };
+
+export interface FollowUpComparison {
+  previousId: string;
+  previousDate: string;
+  previousName: string;
+  newName: string;
+  previousCount?: number;
+  newCount?: number;
+  statusMessage: string;
+  trend: 'decreased' | 'increased' | 'stable';
+}
+
 export interface Diagnosis {
   id: string;
   farmerId: string;
@@ -116,6 +192,8 @@ export interface Diagnosis {
   validationStatus: ValidationStatus;
   createdAt: string; // ISO string
   pestAnalysis?: PestAnalysisResult;
+  imageClassification?: ImageClassificationResult;
+  followUpComparison?: FollowUpComparison;
 }
 
 // ---------- Pest & Trap Intelligence ----------

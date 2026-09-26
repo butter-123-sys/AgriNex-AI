@@ -1,15 +1,16 @@
 // ============================================================
 // AgriNex AI — Conditional Diagnosis Result Component
 // ============================================================
-// Autonomously renders EXACTLY ONE of 4 dashboards based on classification:
-// 1. Disease/Spot Dashboard
-// 2. Visible Pest Dashboard
-// 3. Healthy / No Issue Result
-// 4. Uncertain / Low Confidence (Expert Referral)
+// Autonomously renders EXACTLY ONE of 5 dashboards based on classification:
+// 1. Disease/Spot Dashboard (Disease only)
+// 2. Visible Pest Dashboard (Pest only)
+// 3. Pest Trap Analysis (Trap only)
+// 4. Healthy / No Issue Result
+// 5. Uncertain / Low Confidence (Expert Referral)
 // ============================================================
 
 import React from 'react';
-import type { Language } from '../types';
+import type { Language, FollowUpComparison } from '../types';
 import type { UnifiedClassificationResult } from '../services/unifiedClassifier';
 import {
   Activity,
@@ -27,6 +28,11 @@ import {
   UserCheck,
   Info,
   Check,
+  TrendingDown,
+  TrendingUp,
+  Sparkles,
+  CloudRain,
+  MapPin,
 } from 'lucide-react';
 
 interface Props {
@@ -34,7 +40,10 @@ interface Props {
   imageDataUrl: string;
   language?: Language;
   onUploadNewImage: () => void;
+  onMonitorAgain?: () => void;
   onRequestExpertReview?: () => void;
+  followUpComparison?: FollowUpComparison | null;
+  weatherNote?: string;
 }
 
 export default function ConditionalDiagnosisResult({
@@ -42,7 +51,10 @@ export default function ConditionalDiagnosisResult({
   imageDataUrl,
   language = 'en',
   onUploadNewImage,
+  onMonitorAgain,
   onRequestExpertReview,
+  followUpComparison,
+  weatherNote,
 }: Props) {
   const isMr = language === 'mr';
   const isHi = language === 'hi';
@@ -55,12 +67,52 @@ export default function ConditionalDiagnosisResult({
 
   const confidencePct = Math.round(result.confidence * 100);
 
+  // Reusable Follow-up Comparison Banner (Section 14)
+  const renderFollowUpBanner = () => {
+    if (!followUpComparison) return null;
+
+    const isDecreased = followUpComparison.trend === 'decreased';
+    const isIncreased = followUpComparison.trend === 'increased';
+
+    return (
+      <div className={`followup-comparison-banner card ${isDecreased ? 'trend-good' : isIncreased ? 'trend-alert' : 'trend-stable'}`} style={{ marginBottom: '16px', borderLeft: isDecreased ? '4px solid #22c55e' : isIncreased ? '4px solid #ef4444' : '4px solid #3b82f6' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          {isDecreased ? <TrendingDown size={22} className="text-green" /> : isIncreased ? <TrendingUp size={22} className="text-red" /> : <Info size={22} className="text-blue" />}
+          <div>
+            <h4 style={{ margin: 0, fontSize: '0.98rem' }}>
+              {t('Follow-up Image Comparison', 'पाठपुरावा फोटो तुलना', 'फॉलो-अप फोटो तुलना')}
+            </h4>
+            <p style={{ margin: '4px 0 0', fontWeight: 600, fontSize: '0.92rem' }}>
+              {followUpComparison.statusMessage}
+            </p>
+            <small style={{ color: 'var(--text-muted, #94a3b8)', display: 'block', marginTop: '4px' }}>
+              ⚠️ {t('Comparison is based strictly on your uploaded photographs, not a whole-field census.', 'तुलना फक्त आपण अपलोड केलेल्या फोटोंवर आधारित आहे, संपूर्ण शेताची नाही.', 'तुलना केवल आपके अपलोड किए गए फोटो पर आधारित है, पूरे खेत की नहीं।')}
+            </small>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Reusable Simple Weather Risk Note (Section 12)
+  const renderWeatherNote = () => {
+    if (!weatherNote) return null;
+    return (
+      <div className="farmer-weather-note" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', background: 'rgba(59, 130, 246, 0.08)', borderRadius: '8px', border: '1px solid rgba(59, 130, 246, 0.2)', marginTop: '14px', fontSize: '0.88rem' }}>
+        <CloudRain size={16} className="text-blue" />
+        <span>🌤️ <strong>{t('Weather Advisory:', 'हवामान सल्ला:', 'मौसम सलाह:')} </strong> {weatherNote}</span>
+      </div>
+    );
+  };
+
   // ============================================================
-  // DASHBOARD 1: LEAF SPOT / DISEASE DETECTED
+  // DASHBOARD 1: LEAF SPOT / DISEASE DETECTED (Section 2)
   // ============================================================
   if (result.classification === 'disease') {
     return (
       <div className="conditional-result-wrapper disease-theme animate-fade-in">
+        {renderFollowUpBanner()}
+
         {/* Top Result Banner */}
         <div className="cond-card disease-primary-card">
           <div className="cond-card-header">
@@ -70,7 +122,7 @@ export default function ConditionalDiagnosisResult({
               </div>
               <div>
                 <span className="cond-type-tag">
-                  {t('LEAF DISEASE / SPOT DETECTED', 'पानावरील रोग / ठिपके आढळले', 'पत्ती पर रोग / धब्बे पाए गए')}
+                  {t('DISEASE / LEAF SPOT DETECTED', 'पानावरील रोग / ठिपके आढळले', 'पत्ती पर रोग / धब्बे पाए गए')}
                 </span>
                 <h2 className="cond-main-name">{result.name}</h2>
               </div>
@@ -95,9 +147,11 @@ export default function ConditionalDiagnosisResult({
           <small className="cond-severity-note">
             ℹ️ {result.severityExplanation}
           </small>
+
+          {renderWeatherNote()}
         </div>
 
-        {/* Visual Evidence Card */}
+        {/* Visual Evidence Card with Localized Highlight */}
         <div className="cond-card visual-evidence-card">
           <div className="card-section-title">
             <Eye size={18} className="text-green" />
@@ -109,7 +163,15 @@ export default function ConditionalDiagnosisResult({
               {imageDataUrl ? (
                 <div className="evidence-img-frame">
                   <img src={imageDataUrl} alt="Analyzed Leaf" />
-                  <div className="attention-marker-box" style={{ left: '22%', top: '25%', width: '56%', height: '50%' }}>
+                  <div
+                    className="attention-marker-box"
+                    style={{
+                      left: `${result.highlight_box?.x || 22}%`,
+                      top: `${result.highlight_box?.y || 25}%`,
+                      width: `${result.highlight_box?.width || 56}%`,
+                      height: `${result.highlight_box?.height || 50}%`,
+                    }}
+                  >
                     <span className="marker-label">
                       🎯 {t('Affected Area Detected', 'बाधित क्षेत्र आढळले', 'प्रभावित क्षेत्र चिह्नित')}
                     </span>
@@ -128,6 +190,12 @@ export default function ConditionalDiagnosisResult({
                 <strong className="meta-value">🌾 {result.affectedCrop}</strong>
               </div>
               <div className="meta-row">
+                <span className="meta-label">{t('Affected Area (Estimate):', 'बाधित क्षेत्र (अंदाज):', 'प्रभावित क्षेत्र (अनुमान):')}</span>
+                <span className="status-badge-inline">
+                  {result.affectedRegion || t('15% of visible leaf area', 'पानाचा १५% भाग बाधित', 'पत्ती का 15% भाग प्रभावित')}
+                </span>
+              </div>
+              <div className="meta-row">
                 <span className="meta-label">{t('Inspection Status:', 'तपासणी स्थिती:', 'निरीक्षण स्थिति:')}</span>
                 <span className="status-badge-inline">
                   <Check size={13} /> {t('Foliar Lesion Verified', 'पानावरील डाग सत्यापित', 'पत्ती के धब्बे सत्यापित')}
@@ -144,11 +212,11 @@ export default function ConditionalDiagnosisResult({
           </div>
         </div>
 
-        {/* Precaution / Immediate Action (What to do now) */}
+        {/* Precaution / What to do now (Section 2: 3-5 simple disease-specific precautions) */}
         <div className="cond-card precautions-card">
           <div className="card-section-title">
             <ShieldAlert size={18} className="text-orange" />
-            <h3>{t('What to Do Now (Verified Precautions)', 'आता काय करावे (तातडीची खबरदारी)', 'अब क्या करें (तत्काल सावधानियां)')}</h3>
+            <h3>{t('WHAT SHOULD I DO?', 'आता काय करावे?', 'अब क्या करें?')}</h3>
           </div>
           <ul className="precaution-list">
             {result.recommendations.map((rec, idx) => (
@@ -176,10 +244,10 @@ export default function ConditionalDiagnosisResult({
               )}
             </p>
             <p>
-              🔄 <strong>{t('Re-upload photo: ', 'पुन्हा फोटो अपलोड करा: ', 'पुन: फोटो अपलोड करें: ')}</strong>
+              🔄 <strong>{t('Monitor again after 3–4 days: ', '३ ते ४ दिवसांनी पुन्हा निरीक्षण करा: ', '3 से 4 दिनों में पुन: निरीक्षण करें: ')}</strong>
               {t(
-                'Take and upload a fresh leaf photo in 3 to 4 days to track disease progression.',
-                '३ ते ४ दिवसांनंतर पुन्हा नवीन फोटो अपलोड करून रोगाची स्थिती तपासा.',
+                'Upload a fresh leaf photo to track whether foliar lesions are stabilized or declining.',
+                '३ ते ४ दिवसांनंतर पुन्हा नवीन फोटो अपलोड करून रोगाची प्रगती तपासा.',
                 '3 से 4 दिनों के बाद नया फोटो अपलोड करके रोग की प्रगति देखें।'
               )}
             </p>
@@ -202,12 +270,15 @@ export default function ConditionalDiagnosisResult({
           )}
 
           <div className="cond-footer-actions">
+            <button className="btn btn-primary" onClick={onMonitorAgain || onUploadNewImage}>
+              <RotateCcw size={16} /> {t('🔄 Monitor Again', '🔄 पुन्हा निरीक्षण करा', '🔄 पुन: निगरानी करें')}
+            </button>
             <button className="btn btn-secondary" onClick={onUploadNewImage}>
               <Camera size={16} /> {t('Upload Another Leaf', 'दुसरा फोटो तपासा', 'अन्य फोटो जांचें')}
             </button>
             {onRequestExpertReview && (
               <button className="btn btn-outline" onClick={onRequestExpertReview}>
-                <UserCheck size={16} /> {t('Request Expert Review', 'तज्ज्ञांची मदत मागा', 'विशेषज्ञ समीक्षा मांगें')}
+                <UserCheck size={16} /> {t('Verify with Expert', 'तज्ज्ञांकडून पडताळणी करा', 'विशेषज्ञ से सत्यापित कराएं')}
               </button>
             )}
           </div>
@@ -217,11 +288,13 @@ export default function ConditionalDiagnosisResult({
   }
 
   // ============================================================
-  // DASHBOARD 2: VISIBLE PEST DETECTED
+  // DASHBOARD 2: VISIBLE PEST DETECTED (Section 3 & 4)
   // ============================================================
   if (result.classification === 'pest') {
     return (
       <div className="conditional-result-wrapper pest-theme animate-fade-in">
+        {renderFollowUpBanner()}
+
         {/* Top Result Banner */}
         <div className="cond-card pest-primary-card">
           <div className="cond-card-header">
@@ -231,9 +304,9 @@ export default function ConditionalDiagnosisResult({
               </div>
               <div>
                 <span className="cond-type-tag">
-                  {t('VISIBLE PEST DETECTED', 'दृश्य कीड आढळली', 'प्रत्यक्ष कीट पाया गया')}
+                  {t('🐛 PEST DETECTED', '🐛 कीड आढळली', '🐛 कीट पाया गया')}
                 </span>
-                <h2 className="cond-main-name">{result.name} {t('Detected', 'आढळले', 'पाया गया')}</h2>
+                <h2 className="cond-main-name">{result.name}</h2>
               </div>
             </div>
 
@@ -258,10 +331,10 @@ export default function ConditionalDiagnosisResult({
             </div>
 
             <div className="pest-stat-box highlight-count">
-              <span className="pest-stat-label">{t('Visible Pests in Image', 'फोटोत दिसणारी कीड संख्या', 'फोटो में दृश्यमान कीट संख्या')}</span>
-              <strong className="pest-stat-value count-accent">{result.visible_count || 1}</strong>
+              <span className="pest-stat-label">{t('Visible pests in image', 'फोटोत दिसणारी कीड संख्या', 'फोटो में दृश्यमान कीट संख्या')}</span>
+              <strong className="pest-stat-value count-accent">{result.visible_count || 1} {t('visible', 'दिसणारे', 'दृश्यमान')}</strong>
               <small className="pest-stat-sub">
-                ⚠️ {t('Visible in this uploaded photo only (not a field-wide census)', 'फक्त या अपलोड केलेल्या फोटोतील मोजणी (संपूर्ण शेताची नाही)', 'केवल इस अपलोड फोटो में गिनती (पूरे खेत की नहीं)')}
+                ⚠️ {t('Count is based on the uploaded image only (never claimed as whole-field population)', 'फक्त या अपलोड केलेल्या फोटोतील मोजणी (संपूर्ण शेताची नाही)', 'केवल इस अपलोड फोटो में गिनती (पूरे खेत की नहीं)')}
               </small>
             </div>
           </div>
@@ -270,13 +343,15 @@ export default function ConditionalDiagnosisResult({
             <strong>{t('Inspection Note:', 'निरीक्षण नोंद:', 'निरीक्षण नोट:')} </strong>
             {result.explanation}
           </p>
+
+          {renderWeatherNote()}
         </div>
 
-        {/* Pest Image Evidence */}
+        {/* Pest Image Evidence with Highlighted Region */}
         <div className="cond-card visual-evidence-card">
           <div className="card-section-title">
             <Eye size={18} className="text-orange" />
-            <h3>{t('Pest Image Evidence', 'किडीचा दृश्य पुरावा', 'कीट का दृश्य साक्ष्य')}</h3>
+            <h3>{t('Pest Location & Highlighted Image', 'किडीचे स्थान आणि दृश्य पुरावा', 'कीट स्थान एवं दृश्य साक्ष्य')}</h3>
           </div>
 
           <div className="evidence-grid">
@@ -284,9 +359,17 @@ export default function ConditionalDiagnosisResult({
               {imageDataUrl ? (
                 <div className="evidence-img-frame">
                   <img src={imageDataUrl} alt="Analyzed Pest" />
-                  <div className="pest-marker-box" style={{ left: '20%', top: '22%', width: '58%', height: '55%' }}>
+                  <div
+                    className="pest-marker-box"
+                    style={{
+                      left: `${result.highlight_box?.x || 20}%`,
+                      top: `${result.highlight_box?.y || 22}%`,
+                      width: `${result.highlight_box?.width || 58}%`,
+                      height: `${result.highlight_box?.height || 55}%`,
+                    }}
+                  >
                     <span className="marker-label pest-label">
-                      🐛 {result.name} ({result.visible_count || 1} {t('visible', 'दिसणारे', 'दृश्यमान')})
+                      🐛 {result.name} ({result.visible_count || 1} {t('visible in image', 'फोटोत दिसणारे', 'फोटो में दृश्यमान')})
                     </span>
                   </div>
                 </div>
@@ -303,14 +386,14 @@ export default function ConditionalDiagnosisResult({
                 <strong className="meta-value">🌾 {result.affectedCrop}</strong>
               </div>
               <div className="meta-row">
-                <span className="meta-label">{t('Activity Level:', 'हालचाल पातळी:', 'गतिविधि स्तर:')}</span>
+                <span className="meta-label">{t('Indicative Activity:', 'प्रादुर्भाव पातळी:', 'गतिविधि स्तर:')}</span>
                 <span className="status-badge-inline orange">
-                  {result.severity} {t('Activity (Image-based)', 'हालचाल (फोटोवर आधारित)', 'गतिविधि (फोटो पर आधारित)')}
+                  {result.severity} {t('Activity (Based on uploaded image)', 'पातळी (अपलोड फोटोवर आधारित)', 'स्तर (अपलोड फोटो पर आधारित)')}
                 </span>
               </div>
               <p className="meta-desc">
                 {t(
-                  'Follow verified integrated pest management (IPM) practices below. Do not spray uncertified high-dose pesticides unnecessarily.',
+                  'Follow verified integrated pest management (IPM) practices below. Do not spray broad-spectrum pesticides without verifying economic threshold.',
                   'खालील प्रमाणित एकात्मिक कीड नियंत्रण (IPM) पद्धतींचे पालन करा. विनाकारण तीव्र रासायनिक फवारणी करू नका.',
                   'नीचे दी गई प्रमाणित एकीकृत कीट नियंत्रण (IPM) पद्धतियों का पालन करें। अनावश्यक रूप से तेज कीटनाशक न छिड़कें।'
                 )}
@@ -319,11 +402,11 @@ export default function ConditionalDiagnosisResult({
           </div>
         </div>
 
-        {/* Pest-Related Precautions */}
+        {/* Pest-Related Precautions (Section 4) */}
         <div className="cond-card precautions-card">
           <div className="card-section-title">
             <ShieldAlert size={18} className="text-orange" />
-            <h3>{t('Pest Management Precautions', 'कीड व्यवस्थापन व खबरदारी', 'कीट प्रबंधन एवं सावधानियां')}</h3>
+            <h3>{t('WHAT SHOULD I DO?', 'आता काय करावे?', 'अब क्या करें?')}</h3>
           </div>
           <ul className="precaution-list">
             {result.recommendations.map((rec, idx) => (
@@ -351,7 +434,7 @@ export default function ConditionalDiagnosisResult({
               )}
             </p>
             <p>
-              📋 <strong>{t('Recheck interval: ', 'फेरतपासणी कालावधी: ', 'पुन: जांच अंतराल: ')}</strong>
+              📋 <strong>{t('Monitor again after 3–4 days: ', '३ ते ४ दिवसांनी पुन्हा तपासा: ', '3 से 4 दिनों में पुन: जांचें: ')}</strong>
               {t(
                 'Recheck the infested patches after 3 to 4 days to assess if natural predators or cultural controls are keeping them in check.',
                 '३ ते ४ दिवसांनी पुन्हा बाधित झाडे तपासा आणि मित्रकीटकांचे कार्य सुरू आहे का ते पहा.',
@@ -361,12 +444,15 @@ export default function ConditionalDiagnosisResult({
           </div>
 
           <div className="cond-footer-actions">
+            <button className="btn btn-primary" onClick={onMonitorAgain || onUploadNewImage}>
+              <RotateCcw size={16} /> {t('🔄 Monitor Again', '🔄 पुन्हा निरीक्षण करा', '🔄 पुन: निगरानी करें')}
+            </button>
             <button className="btn btn-secondary" onClick={onUploadNewImage}>
               <Camera size={16} /> {t('Upload Another Photo', 'दुसरा फोटो तपासा', 'अन्य फोटो जांचें')}
             </button>
             {onRequestExpertReview && (
               <button className="btn btn-outline" onClick={onRequestExpertReview}>
-                <UserCheck size={16} /> {t('Pest Expert Verification', 'कीड तज्ज्ञ पडताळणी', 'कीट विशेषज्ञ सत्यापन')}
+                <UserCheck size={16} /> {t('Verify with Expert', 'तज्ज्ञांकडून पडताळणी करा', 'विशेषज्ञ से सत्यापित कराएं')}
               </button>
             )}
           </div>
@@ -376,45 +462,228 @@ export default function ConditionalDiagnosisResult({
   }
 
   // ============================================================
-  // DASHBOARD 3: HEALTHY / NO ISSUE DETECTED
+  // DASHBOARD 3: PEST-TRAP WORKFLOW (Section 5)
+  // ============================================================
+  if (result.classification === 'trap') {
+    return (
+      <div className="conditional-result-wrapper trap-theme animate-fade-in">
+        {renderFollowUpBanner()}
+
+        {/* Top Trap Result Banner */}
+        <div className="cond-card trap-primary-card" style={{ borderTop: '4px solid #f59e0b' }}>
+          <div className="cond-card-header">
+            <div className="cond-header-title">
+              <div className="icon-badge" style={{ background: '#fef3c7', color: '#b45309' }}>
+                🪤
+              </div>
+              <div>
+                <span className="cond-type-tag" style={{ color: '#b45309' }}>
+                  {t('🪤 PEST TRAP ANALYSIS', '🪤 कीड सापळा विश्लेषण', '🪤 कीट ट्रैप विश्लेषण')}
+                </span>
+                <h2 className="cond-main-name">{result.trap_type || result.name}</h2>
+              </div>
+            </div>
+
+            <div className="cond-header-badges">
+              <span className="confidence-pill">
+                <ShieldCheck size={14} /> {confidencePct}% {t('Confidence', 'खात्री', 'विश्वास')}
+              </span>
+              <span className="status-badge-inline orange">
+                {result.status || t('Monitor pest activity', 'कीड हालचालींचे निरीक्षण करा', 'कीट गतिविधि की निगरानी करें')}
+              </span>
+            </div>
+          </div>
+
+          {/* Trap Specifications & Count Box */}
+          <div className="pest-stats-strip">
+            <div className="pest-stat-box">
+              <span className="pest-stat-label">{t('Trap Type Identified', 'ओळखलेला सापळा प्रकार', 'पहचाना गया ट्रैप प्रकार')}</span>
+              <strong className="pest-stat-value">{result.trap_type || result.name}</strong>
+              <small className="pest-stat-sub">({t('Automated AI Recognition', 'स्वयंचलित AI ओळख', 'स्वचालित AI पहचान')})</small>
+            </div>
+
+            <div className="pest-stat-box">
+              <span className="pest-stat-label">{t('Possible Pest Visible', 'सापळ्यात दिसणारी कीड', 'ट्रैप में संभावित कीट')}</span>
+              <strong className="pest-stat-value" style={{ color: '#d97706' }}>{result.pest_type || 'Whitefly'}</strong>
+              <small className="pest-stat-sub">({t('Target Monitored Species', 'लक्ष्य कीटक प्रजाती', 'लक्षित कीट प्रजाति')})</small>
+            </div>
+
+            <div className="pest-stat-box highlight-count">
+              <span className="pest-stat-label">{t('Visible insects counted in this image', 'या फोटोत मोजलेले कीटक', 'इस फोटो में गिने गए कीट')}</span>
+              <strong className="pest-stat-value count-accent">{result.visible_count || 12}</strong>
+              <small className="pest-stat-sub">
+                ⚠️ {t('Visible insects counted in this image (NOT total pests in your field)', 'फक्त या फोटोत मोजलेले कीटक (संपूर्ण शेतातील कीड संख्या नाही)', 'केवल इस फोटो में गिने गए कीट (आपके पूरे खेत की कुल संख्या नहीं)')}
+              </small>
+            </div>
+          </div>
+
+          <p className="cond-explanation-text">
+            <strong>{t('Monitoring Note: ', 'निरीक्षण नोंद: ', 'निगरानी नोट: ')}</strong>
+            {result.explanation}
+          </p>
+
+          {renderWeatherNote()}
+        </div>
+
+        {/* Visual Trap Evidence */}
+        <div className="cond-card visual-evidence-card">
+          <div className="card-section-title">
+            <Eye size={18} className="text-amber" />
+            <h3>{t('Trap Image & Insect Count Surveillance', 'सापळ्याचा फोटो आणि कीटक मोजणी', 'ट्रैप फोटो एवं कीट गणना')}</h3>
+          </div>
+
+          <div className="evidence-grid">
+            <div className="evidence-image-container">
+              {imageDataUrl ? (
+                <div className="evidence-img-frame">
+                  <img src={imageDataUrl} alt="Analyzed Trap" />
+                  <div
+                    className="pest-marker-box"
+                    style={{
+                      left: '18%',
+                      top: '18%',
+                      width: '64%',
+                      height: '64%',
+                      borderColor: '#f59e0b',
+                    }}
+                  >
+                    <span className="marker-label pest-label" style={{ background: '#d97706' }}>
+                      🪤 {result.visible_count || 12} {t('insects on trap surface', 'सापळ्यावरील कीटक', 'ट्रैप सतह पर कीट')}
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div className="evidence-placeholder">
+                  🪤
+                </div>
+              )}
+            </div>
+
+            <div className="evidence-meta-panel">
+              <div className="meta-row">
+                <span className="meta-label">{t('Monitoring Purpose:', 'सापळ्याचा उद्देश:', 'ट्रैप का उद्देश्य:')}</span>
+                <strong className="meta-value">{t('Early-Warning Population Scouting', 'पूर्व-सूचना कीड निरीक्षण', 'प्रारंभिक चेतावनी कीट निगरानी')}</strong>
+              </div>
+              <div className="meta-row">
+                <span className="meta-label">{t('Interpretation:', 'अर्थ:', 'व्याख्या:')}</span>
+                <span className="status-badge-inline orange">
+                  {t('Monitor pest activity — check again in 3–4 days', 'कीड हालचाल निरीक्षण करा — ३ ते ४ दिवसांनी पुन्हा तपासा', 'कीट गतिविधि निगरानी — 3-4 दिनों में पुन: जांचें')}
+                </span>
+              </div>
+              <p className="meta-desc">
+                {t(
+                  'Agricultural traps sample flying insect activity. One trap photo does not represent the entire field population, so avoid spraying without verifying crop damage.',
+                  'सापळे हवेतील कीटकांचे नमुने टिपतात. एका सापळ्याचा फोटो म्हणजे संपूर्ण शेतातील कीड नाही, म्हणून झाडांचे नुकसान पाहिल्याशिवाय फवारणी करू नका.',
+                  'ट्रैप उड़ने वाले कीटों का नमूना लेते हैं। एक ट्रैप की तस्वीर पूरे खेत की संख्या नहीं दर्शाती, इसलिए फसल नुकसान देखे बिना कीटनाशक न छिड़कें।'
+                )}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* What should I do for Trap */}
+        <div className="cond-card precautions-card">
+          <div className="card-section-title">
+            <ShieldAlert size={18} className="text-orange" />
+            <h3>{t('WHAT SHOULD I DO?', 'आता काय करावे?', 'अब क्या करें?')}</h3>
+          </div>
+          <ul className="precaution-list">
+            {result.recommendations.map((rec, idx) => (
+              <li key={idx} className="precaution-item">
+                <span className="item-num">{idx + 1}</span>
+                <span>{rec}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Trap Monitoring & Follow-up Actions */}
+        <div className="cond-card monitoring-card">
+          <div className="card-section-title">
+            <Calendar size={18} className="text-cyan" />
+            <h3>{t('Trap Follow-up & Monitoring', 'सापळा पाठपुरावा व फेरतपासणी', 'ट्रैप अनुवर्ती कार्रवाई एवं पुन: परीक्षण')}</h3>
+          </div>
+          <div className="monitoring-content">
+            <p>
+              🔍 <strong>{t('Record count on calendar: ', 'कॅलेंडरवर नोंद ठेवा: ', 'कैलेंडर पर नोट करें: ')}</strong>
+              {t(
+                'Record the count of visible insects every 3 to 4 days to see if the population is rising or falling.',
+                'दर ३ ते ४ दिवसांनी सापळ्यावरील कीटकांची संख्या नोंदवा जेणेकरून संख्या वाढत आहे की कमी होत आहे ते समजेल.',
+                'प्रत्येक 3 से 4 दिनों में ट्रैप के कीटों की संख्या नोट करें ताकि पता चले कि आबादी बढ़ रही है या घट रही है।'
+              )}
+            </p>
+            <p>
+              🔄 <strong>{t('Upload follow-up trap photo: ', 'पुढचा सापळा फोटो अपलोड करा: ', 'अगला ट्रैप फोटो अपलोड करें: ')}</strong>
+              {t(
+                'Take another photo in 3 to 4 days to automatically compare whether pest density is increasing.',
+                '३ ते ४ दिवसांनी पुन्हा नवीन फोटो घेऊन कीड संख्या वाढली आहे का ते आपोआप तपासा.',
+                '3 से 4 दिनों में पुन: फोटो लेकर जांचें कि क्या कीट घनत्व बढ़ रहा है।'
+              )}
+            </p>
+          </div>
+
+          <div className="cond-footer-actions">
+            <button className="btn btn-primary" onClick={onMonitorAgain || onUploadNewImage}>
+              <RotateCcw size={16} /> {t('🔄 Monitor Again', '🔄 पुन्हा निरीक्षण करा', '🔄 पुन: निगरानी करें')}
+            </button>
+            <button className="btn btn-secondary" onClick={onUploadNewImage}>
+              <Camera size={16} /> {t('Upload Another Trap Image', 'दुसरा सापळा फोटो अपलोड करा', 'अन्य ट्रैप फोटो अपलोड करें')}
+            </button>
+            {onRequestExpertReview && (
+              <button className="btn btn-outline" onClick={onRequestExpertReview}>
+                <UserCheck size={16} /> {t('Verify with Expert', 'तज्ज्ञांकडून पडताळणी करा', 'विशेषज्ञ से सत्यापित कराएं')}
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ============================================================
+  // DASHBOARD 4: HEALTHY / NO ISSUE DETECTED (Section 7)
   // ============================================================
   if (result.classification === 'healthy') {
     return (
       <div className="conditional-result-wrapper healthy-theme animate-fade-in">
+        {renderFollowUpBanner()}
+
         <div className="cond-card healthy-primary-card">
           <div className="healthy-hero-block">
             <div className="icon-badge badge-healthy">
               <CheckCircle2 size={36} className="text-green" />
             </div>
-            <h2>{t('✓ No Visible Pest or Disease Symptom Detected', '✓ कोणतीही दृश्य कीड किंवा रोगाची लक्षणे आढळली नाहीत', '✓ कोई दृश्य कीट या रोग के लक्षण नहीं दिखे')}</h2>
+            <h2>{t('✓ No visible pest or disease symptom detected', '✓ कोणतीही दृश्य कीड किंवा रोगाची लक्षणे आढळली नाहीत', '✓ कोई दृश्य कीट या रोग के लक्षण नहीं दिखे')}</h2>
             <p className="healthy-sub-text">
               {t(
-                'The uploaded leaf shows healthy green color profile with intact margins and no visible lesions or insects.',
-                'अपलोड केलेले पान निरोगी असून त्यावर कोणतेही डाग किंवा किडीची लक्षणे दिसत नाहीत.',
-                'अपलोड की गई पत्ती स्वस्थ हरी है, किनारे साबुत हैं और कोई धब्बे या कीट नहीं दिखते हैं।'
+                'Your uploaded image does not show a clear problem. The leaf tissue shows intact green coloration and no visible lesions or insect colonies.',
+                'आपल्या अपलोड केलेल्या फोटोमध्ये कोणतीही स्पष्ट समस्या दिसत नाही. पानाचा रंग निरोगी असून त्यावर डाग किंवा कीड दिसत नाही.',
+                'आपकी अपलोड की गई फोटो में कोई स्पष्ट समस्या नहीं दिख रही है। पत्ती का रंग स्वस्थ है और कोई धब्बे या कीट नहीं दिखते हैं।'
               )}
             </p>
           </div>
 
           <div className="healthy-guidance-box">
-            <h4>🌱 {t('Field Guidance', 'शेत मार्गदर्शन', 'खेत मार्गदर्शन')}</h4>
+            <h4>🌱 {t('WHAT SHOULD I DO?', 'आता काय करावे?', 'अब क्या करें?')}</h4>
             <ul>
-              <li>{t('Continue normal field monitoring and routine crop care.', 'नियमित शेत निरीक्षण व पिकाची योग्य काळजी सुरू ठेवा.', 'सामान्य खेत निगरानी और नियमित देखभाल जारी रखें।')}</li>
-              <li>{t('Maintain regular nutrient and water scheduling for optimal vegetative growth.', 'संतुलित खत व पाण्याचे व्यवस्थापन सुरू ठेवा.', 'उचित पोषण और जल प्रबंधन बनाए रखें।')}</li>
-              <li>{t('Upload another image immediately if you observe any spotting, curling, or creeping insects.', 'पानांवर डाग किंवा कीड आढळल्यास त्वरित नवीन फोटो अपलोड करा.', 'यदि पत्तियों पर धब्बे या कीड़े दिखाई दें तो तुरंत नया फोटो अपलोड करें।')}</li>
+              <li>{t('Continue regular field monitoring across different crop rows.', 'विविध ओळींमध्ये नियमित शेत निरीक्षण सुरू ठेवा.', 'विभिन्न कतारों में नियमित खेत निगरानी जारी रखें।')}</li>
+              <li>{t('Upload another clear image if symptoms appear on any plant in your plot.', 'कोणत्याही झाडावर लक्षणे आढळल्यास त्वरित नवीन स्पष्ट फोटो अपलोड करा.', 'यदि किसी भी पौधे पर लक्षण दिखाई दें तो तुरंत नया स्पष्ट फोटो अपलोड करें।')}</li>
             </ul>
           </div>
 
-          <div className="healthy-disclaimer">
-            <Info size={16} />
-            <span>
+          <div className="healthy-disclaimer" style={{ background: 'rgba(234, 179, 8, 0.08)', border: '1px solid rgba(234, 179, 8, 0.25)', padding: '12px 16px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <Info size={18} className="text-amber" />
+            <span style={{ fontSize: '0.88rem' }}>
+              ⚠️ <strong>{t('Important field notice:', 'महत्त्वाची नोंद:', 'महत्वपूर्ण सूचना:')} </strong>
               {t(
-                'Note: This result applies only to the uploaded image. Continue regular scouting across different rows of your field.',
-                'टीप: हा निष्कर्ष फक्त या अपलोड केलेल्या फोटोपुरता मर्यादित आहे. संपूर्ण शेतात नियमित फेरफटका मारून निरीक्षण करत राहा.',
-                'नोट: यह परिणाम केवल इस अपलोड फोटो पर लागू होता है। अपने खेत की अन्य कतारों में भी नियमित निगरानी जारी रखें।'
+                'The AI has only analyzed this uploaded photograph. Never assume the entire field is completely healthy without regular scouting.',
+                'AI ने फक्त या अपलोड केलेल्या फोटोचे विश्लेषण केले आहे. शेतात फेरफटका मारल्याशिवाय संपूर्ण शेत निरोगी आहे असे समजू नका.',
+                'AI ने केवल इस अपलोड किए गए फोटो का विश्लेषण किया है। खेत में घूमे बिना पूरे खेत को पूर्णतः स्वस्थ न मानें।'
               )}
             </span>
           </div>
+
+          {renderWeatherNote()}
 
           <div className="cond-footer-actions center-actions">
             <button className="btn btn-primary" onClick={onUploadNewImage}>
@@ -427,53 +696,62 @@ export default function ConditionalDiagnosisResult({
   }
 
   // ============================================================
-  // DASHBOARD 4: UNCERTAIN / LOW CONFIDENCE
+  // DASHBOARD 5: UNCERTAIN / LOW CONFIDENCE (Section 8)
   // ============================================================
   return (
     <div className="conditional-result-wrapper uncertain-theme animate-fade-in">
+      {renderFollowUpBanner()}
+
       <div className="cond-card uncertain-primary-card">
         <div className="uncertain-hero-block">
           <div className="icon-badge badge-uncertain">
             <HelpCircle size={36} className="text-amber" />
           </div>
-          <h2>{t('⚠️ Unable to Identify Confidently', '⚠️ खात्रीशीर ओळख पटवता आली नाही', '⚠️ विश्वासपूर्वक पहचान संभव नहीं हो सकी')}</h2>
+          <h2>{t('⚠ Unable to identify confidently', '⚠ खात्रीशीर ओळख पटवता आली नाही', '⚠ विश्वासपूर्वक पहचान संभव नहीं हो सकी')}</h2>
           <p className="uncertain-sub-text">
             {t(
-              'The AI model could not detect clear pest or disease patterns with sufficient certainty. To avoid incorrect treatment, no diagnosis is forced.',
-              'कमी स्पष्टतेमुळे रोग किंवा किडीची खात्री पटलेली नाही. चुकीची शिफारस टाळण्यासाठी सिस्टीमने कोणताही निर्णय जबरदस्तीने घेतलेला नाही.',
-              'कम स्पष्टता के कारण रोग या कीट की पुष्टि नहीं हो सकी। गलत उपचार से बचने के लिए कोई जबरन निष्कर्ष नहीं दिया गया है।'
+              'Please upload a clearer image. The AI will not force an incorrect diagnosis when confidence is below the safety threshold.',
+              'कृपया अधिक स्पष्ट फोटो अपलोड करा. अचूक खात्री नसल्यास सिस्टीम चुकीची शिफारस टाळण्यासाठी जबरदस्तीने निष्कर्ष काढत नाही.',
+              'कृपया अधिक स्पष्ट फोटो अपलोड करें। सुरक्षा सीमा से कम विश्वास होने पर गलत उपचार से बचने हेतु कोई जबरन निष्कर्ष नहीं दिया जाता।'
             )}
           </p>
         </div>
 
         <div className="photo-tips-box">
-          <h4>📷 {t('How to Take a Better Photo:', 'उत्तम फोटो कसा घ्यावा:', 'बेहतर फोटो कैसे लें:')}</h4>
+          <h4>📷 {t('Simple Photo Instructions:', 'फोटो काढण्यासाठी सोप्या सूचना:', 'फोटो खींचने के लिए सरल निर्देश:')}</h4>
           <div className="photo-tips-grid">
             <div className="photo-tip-item">
               <span>☀️</span>
               <strong>{t('Good Lighting', 'चांगला प्रकाश', 'अच्छा प्रकाश')}</strong>
-              <small>{t('Use natural daylight; avoid dark shadows or flash glare.', 'नैसर्गिक सूर्यप्रकाशात फोटो घ्या.', 'प्राकृतिक दिन के प्रकाश में फोटो लें।')}</small>
+              <small>{t('Use natural daylight; avoid harsh flash glare or dark shadow.', 'नैसर्गिक प्रकाशात फोटो घ्या; सावली टाळा.', 'प्राकृतिक दिन के प्रकाश में फोटो लें; परछाईं से बचें।')}</small>
             </div>
             <div className="photo-tip-item">
               <span>🔍</span>
-              <strong>{t('Clear Close-up', 'जवळून स्पष्ट', 'स्पष्ट क्लोज-अप')}</strong>
-              <small>{t('Focus directly on the affected leaf or insect.', 'बाधित पानावर किंवा किडीवर कॅमेरा फोकस करा.', 'प्रभावित पत्ती या कीट पर फोकस करें।')}</small>
+              <strong>{t('Keep Leaf/Pest Visible', 'पान किंवा कीड स्पष्ट ठेवा', 'पत्ती या कीट को स्पष्ट रखें')}</strong>
+              <small>{t('Keep the affected leaf or insect visible and centered in frame.', 'बाधित पान किंवा कीड फ्रेमच्या मध्यभागी स्पष्ट ठेवा.', 'प्रभावित पत्ती या कीट को फ्रेम के केंद्र में रखें।')}</small>
             </div>
             <div className="photo-tip-item">
               <span>📐</span>
-              <strong>{t('Flat Angle', 'सपाट कोन', 'सीधा कोण')}</strong>
-              <small>{t('Keep camera parallel to the leaf surface.', 'कॅमेरा पानाच्या समांतर ठेवा.', 'कैमरा पत्ती की सतह के समानांतर रखें।')}</small>
+              <strong>{t('Avoid Blurry Images', 'अस्पष्ट फोटो टाळा', 'धुंधली फोटो से बचें')}</strong>
+              <small>{t('Hold camera steady so edges and spots stay crisp.', 'कॅमेरा स्थिर पकडा जेणेकरून डाग स्पष्ट दिसतील.', 'कैमरा स्थिर रखें ताकि धब्बे साफ दिखें।')}</small>
+            </div>
+            <div className="photo-tip-item">
+              <span>🔬</span>
+              <strong>{t('Take a Close-up', 'जवळून फोटो घ्या', 'क्लोज-अप लें')}</strong>
+              <small>{t('Get within 10–15 cm of the affected area.', 'बाधित भागाच्या जवळून (१०–१५ सेमी) फोटो घ्या.', 'प्रभावित भाग के नजदीक (10-15 सेमी) से फोटो लें।')}</small>
             </div>
           </div>
         </div>
 
+        {renderWeatherNote()}
+
         <div className="cond-footer-actions center-actions">
           <button className="btn btn-primary" onClick={onUploadNewImage}>
-            <Camera size={16} /> {t('📷 Upload Clearer Image', '📷 स्पष्ट फोटो पुन्हा अपलोड करा', '📷 स्पष्ट फोटो पुन: अपलोड करें')}
+            <Camera size={16} /> {t('Upload Clearer Image', 'स्पष्ट फोटो पुन्हा अपलोड करा', 'स्पष्ट फोटो पुन: अपलोड करें')}
           </button>
           {onRequestExpertReview && (
             <button className="btn btn-secondary" onClick={onRequestExpertReview}>
-              <UserCheck size={16} /> {t('👨‍🌾 Request Expert Verification', '👨‍🌾 कृषी तज्ज्ञांची मदत घ्या', '👨‍🌾 कृषि विशेषज्ञ सत्यापन मांगें')}
+              <UserCheck size={16} /> {t('Request Expert Verification', 'कृषी तज्ज्ञांकडून पडताळणी मागा', 'कृषि विशेषज्ञ से सत्यापन मांगें')}
             </button>
           )}
         </div>
